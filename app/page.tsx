@@ -65,6 +65,45 @@ function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void) {
   return { onTouchStart, onTouchEnd };
 }
 
+// ─── Text Reveal Animation ───────────────────────────────────────
+function TextReveal({ text, delay = 0, className }: { text: string; delay?: number; className?: string }) {
+  const words = text.split(' ');
+  return (
+    <span className={className}>
+      {words.map((word, i) => (
+        <motion.span
+          key={i}
+          initial={{ opacity: 0, y: 8, filter: 'blur(4px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.35, delay: delay + i * 0.06, ease: 'easeOut' }}
+          style={{ display: 'inline-block', marginRight: '0.3em' }}
+        >
+          {word}
+        </motion.span>
+      ))}
+    </span>
+  );
+}
+
+// ─── Confidence Meter ────────────────────────────────────────────
+function ConfidenceMeter({ progress, label = 'CONFIDENCE' }: { progress: number; label?: string }) {
+  const pct = Math.min(Math.max(progress, 0), 1);
+  const color = pct < 0.3 ? T.textTer : pct < 0.7 ? T.amber : T.green;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+      <span style={{ ...mono, fontSize: 9, color: T.textTer, minWidth: 72 }}>{label}</span>
+      <div style={{ flex: 1, height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' }}>
+        <motion.div
+          style={{ height: '100%', borderRadius: 2, background: color }}
+          animate={{ width: `${pct * 100}%` }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+        />
+      </div>
+      <span style={{ ...mono, fontSize: 9, color, minWidth: 28, textAlign: 'right' }}>{Math.round(pct * 100)}%</span>
+    </div>
+  );
+}
+
 // ─── Animated Counter Hook ───────────────────────────────────────
 function useAnimatedCounter(target: number, duration = 1500, start = true) {
   const [value, setValue] = useState(0);
@@ -398,7 +437,7 @@ function Phase1() {
     <div style={{ padding: isMobile ? '32px 16px' : '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ ...mono, fontSize: 11, color: T.accent, letterSpacing: 2, marginBottom: 12 }}>PHASE 1</div>
       <h1 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 700, color: T.text, margin: 0, marginBottom: 24, lineHeight: 1.2 }}>
-        The Mathematical Nightmare
+        <TextReveal text="The Mathematical Nightmare" />
       </h1>
 
       <div style={{ display: 'flex', gap: isMobile ? 12 : 24, marginBottom: 24, justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
@@ -502,6 +541,46 @@ function Phase1() {
               Linear graph traversal. Sub-millisecond execution.<br />
               Define the rule once. It runs forever.
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Benchmark Comparison */}
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: isMobile ? 16 : 24, marginBottom: 32 }}>
+        <div style={{ ...mono, fontSize: 10, color: T.textTer, marginBottom: 12, textAlign: 'center' }}>PIPELINE EXECUTION TIME COMPARISON</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ ...mono, fontSize: 11, color: T.red }}>Traditional Pipeline</span>
+              <span style={{ ...mono, fontSize: 11, color: T.red }}>~4.2 min</span>
+            </div>
+            <div style={{ height: 6, background: T.border, borderRadius: 3, overflow: 'hidden' }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: '100%' }}
+                transition={{ duration: 2, delay: 0.5, ease: 'easeOut' }}
+                style={{ height: '100%', background: `linear-gradient(90deg, ${T.red}80, ${T.red})`, borderRadius: 3 }}
+              />
+            </div>
+          </div>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ ...mono, fontSize: 11, color: T.accent }}>.onto Compiled Graph</span>
+              <span style={{ ...mono, fontSize: 11, color: T.accent }}>0.42ms</span>
+            </div>
+            <div style={{ height: 6, background: T.border, borderRadius: 3, overflow: 'hidden' }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: '0.17%' }}
+                transition={{ duration: 0.3, delay: 2.5, ease: 'easeOut' }}
+                style={{ height: '100%', background: `linear-gradient(90deg, ${T.accent}80, ${T.accent})`, borderRadius: 3, minWidth: 3 }}
+              />
+            </div>
+          </div>
+          <div style={{ textAlign: 'center', ...mono, fontSize: 11, color: T.green, marginTop: 4 }}>
+            <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 3, duration: 0.5 }}>
+              600,000× faster — from minutes to sub-millisecond
+            </motion.span>
           </div>
         </div>
       </div>
@@ -627,7 +706,7 @@ function Phase2() {
     <div style={{ padding: isMobile ? '32px 16px' : '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ ...mono, fontSize: 11, color: T.accent, letterSpacing: 2, marginBottom: 12 }}>PHASE 2</div>
       <h1 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8, lineHeight: 1.2 }}>
-        The .onto Engine
+        <TextReveal text="The .onto Engine" />
       </h1>
       <p style={{ color: T.textSec, fontSize: 14, marginBottom: 24 }}>
         No SQL. No Python glue. One compiled specification that models your entire indicator universe — entities, relationships, and forward-reasoning rules. Click section headers to collapse.
@@ -875,7 +954,7 @@ function Phase3() {
     <div style={{ padding: isMobile ? '32px 16px' : '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ ...mono, fontSize: 11, color: T.accent, letterSpacing: 2, marginBottom: 12 }}>PHASE 3</div>
       <h1 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8, lineHeight: 1.2 }}>
-        The Yen Carry Trade Unwind
+        <TextReveal text="The Yen Carry Trade Unwind" />
       </h1>
       <p style={{ color: T.textSec, fontSize: isMobile ? 13 : 14, marginBottom: 16 }}>
         July 16, 2024: S&P 500 hits all-time high. Standard momentum models say &quot;Buy.&quot; Twelve days later, VIX explodes to 65 and tech craters. Two ticks. Watch what the .onto engine sees that your current stack doesn&apos;t.
@@ -1050,7 +1129,7 @@ function Phase4() {
     <div style={{ padding: isMobile ? '32px 16px' : '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ ...mono, fontSize: 11, color: T.accent, letterSpacing: 2, marginBottom: 12 }}>PHASE 4</div>
       <h1 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8, lineHeight: 1.2 }}>
-        Deterministic AI
+        <TextReveal text="Deterministic AI" />
       </h1>
       <p style={{ color: T.textSec, fontSize: isMobile ? 13 : 14, marginBottom: 24, maxWidth: 800 }}>
         Everyone wants to use LLMs to trade. LLMs hallucinate on flat data. When an AI agent is plugged into Ontos, it doesn&apos;t guess based on text vectors — it receives a deterministic, mathematically verified state of the market with full provenance.
@@ -1083,6 +1162,15 @@ function Phase4() {
               <span style={{ ...mono, fontSize: 9, color: T.accent, minWidth: 24 }}>{typingSpeed}×</span>
             </div>
           </div>
+          {/* Confidence meter — fills as agent types responses */}
+          {(typing || chatStep >= 2) && (
+            <div style={{ padding: '4px 16px', borderBottom: `1px solid ${T.border}` }}>
+              <ConfidenceMeter
+                progress={chatStep >= 6 ? 1 : chatStep >= 4 ? 0.85 : chatStep >= 2 ? 0.6 : typing ? Math.min(typingText.length / (CHAT_MESSAGES[Math.min(chatStep, 5)]?.text.length || 200), 0.95) : 0}
+                label="GRAPH CONFIDENCE"
+              />
+            </div>
+          )}
           <div ref={chatRef} style={{ padding: 16, minHeight: 320, maxHeight: 400, overflowY: 'auto' }}>
             {chatStep === 0 && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 280 }}>
