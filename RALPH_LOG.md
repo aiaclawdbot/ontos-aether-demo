@@ -10,15 +10,19 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 
 ## Backlog
 - [ ] Phase 3: Add sound effects toggle (optional terminal typing sounds)
-- [ ] Performance — lazy load phases, reduce bundle size (currently 55kB page JS)
-- [ ] OG image — generate or add a static og:image for social sharing
+- [ ] Performance — lazy load phases, reduce bundle size (currently 56kB page JS)
 - [ ] Mobile: Bottom sheet navigation drawer instead of compressed header tabs
-- [ ] Add a "Book a Demo" floating CTA that appears after Phase 2
 - [ ] Phase 2: Add a minimap/scrollbar indicator for the code editor
-- [ ] Add subtle hover effects on stat cards (scale + glow)
-- [ ] Phase 1: Add animated connection lines between the 3 stat counters
+- [ ] Phase 4: Add a third follow-up question with portfolio-level recommendation
+- [ ] Add subtle gradient border animation on the main CTA button in Phase 4
+- [ ] Phase 3: Add a mini risk gauge (speedometer-style) that fills during tick playback
+- [ ] Add a "Share Demo" button (copy link to clipboard)
 
 ## Completed
+- [x] Add subtle hover effects on stat cards (scale + glow) — StatCard component with motion scale/boxShadow
+- [x] Add a "Book a Demo" floating CTA that appears after Phase 2 — FloatingCTA fixed bottom-right
+- [x] Phase 1: Add animated connection lines between the 3 stat counters — gradient lines animate in
+- [x] OG image — dynamic Next.js edge OG image with stats and branding
 - [x] Phase 1: Staggered reveal of pipeline steps (slide-in with 150ms stagger)
 - [x] Phase 3: Replay button to re-run tick sequence without resetting phase
 - [x] Phase 4: Copy response button on agent messages (clipboard + feedback)
@@ -54,6 +58,14 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [x] Subtle grid background animation with radial glow (non-distracting, adds depth)
 
 ## Iteration History
+
+### Iteration 8 — 2026-02-24T08:48+01:00
+- StatCard component: hover scale (1.05x) + colored glow shadow on all stat cards (Phase 2 compile stats, Phase 3 result stats)
+- Floating "Book a Demo" CTA: appears after Phase 2 (fixed bottom-right, links to cal.com, animated entrance/exit)
+- Phase 1 stat counters: animated gradient connection lines between Indicators → Relationships → Rules (staggered reveal)
+- OG image: dynamic edge-rendered opengraph-image.tsx with Ontos branding, 4 stat blocks, radial glow
+- Added 4 new backlog items (risk gauge, share button, gradient CTA border, third follow-up)
+- Build: ✓ (56kB page JS) | Deploy: ✓ (Vercel prod)
 
 ### Iteration 7 — 2026-02-24T08:33+01:00
 - Phase 1: Staggered reveal animation — pipeline steps slide in one by one (left for "current stack", right for "Ontos"), 150ms stagger
