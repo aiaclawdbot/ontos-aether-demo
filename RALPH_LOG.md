@@ -12,13 +12,16 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [ ] Phase 3: Add sound effects toggle (optional terminal typing sounds)
 - [ ] Performance — lazy load phases, reduce bundle size (currently 57kB page JS)
 - [ ] Mobile: Bottom sheet navigation drawer instead of compressed header tabs
-- [ ] Phase 1: Add animated "How it works" flowchart below the comparison grid
+- [x] Phase 1: Add animated "How it works" flowchart below the comparison grid
 - [ ] Phase 3: Add a "timeline scrubber" to jump to any point in the tick sequence
 - [x] Add micro-interaction: phase number counter animates (flip/slide) on phase change
 - [x] Phase 2: Add "Expand All / Collapse All" toggle for code sections
-- [ ] Add scroll progress percentage in footer (how far through current phase)
-- [ ] Phase 2: Add Cmd+F style search/filter for .onto code lines
+- [x] Add scroll progress percentage in footer (how far through current phase)
+- [x] Phase 2: Add Cmd+F style search/filter for .onto code lines
 - [ ] Add subtle phase transition sound cue (web audio API, optional)
+- [ ] Phase 4: Add "Export Report" button that generates a summary card
+- [ ] Add keyboard shortcut hints tooltip (? key to toggle)
+- [ ] Phase 3: Add mini terminal command history (scrollable log of past ticks)
 - [x] Phase 3: Add pulsing dot on sparkline during active tick playback
 
 ## Completed
@@ -75,6 +78,13 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [x] Button press ripple effect on CTA buttons (RippleButton component with CSS animation)
 
 ## Iteration History
+
+### Iteration 14 — 2026-02-24T10:23+01:00
+- Scroll progress indicator: percentage + mini progress bar in footer, updates on scroll via useScrollProgress hook
+- Phase 2 code search: ⌘F/Ctrl+F search input appears after compilation, highlights matching lines in amber, shows match count, Escape to clear
+- Phase 1 "How it works" flowchart: animated 4-step flow (Raw Indicators → Compile to Graph → Rule Engine → Live Signal) with staggered reveal, responsive column/row layout
+- Added 3 new backlog items (export report, keyboard hints, terminal history)
+- Build: ✓ (59.7kB page JS) | Deploy: pending
 
 ### Iteration 13 — 2026-02-24T10:06+01:00
 - Phase 3 sparkline pulsing dot: animated pulsing circle on active tick marker (green for tick1, red for tick2) during playback

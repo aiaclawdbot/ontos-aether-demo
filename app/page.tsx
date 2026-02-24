@@ -18,6 +18,21 @@ function useMediaQuery(query: string) {
   return matches;
 }
 
+// ─── Scroll Progress Hook ────────────────────────────────────────
+function useScrollProgress() {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(docHeight > 0 ? Math.min(scrollTop / docHeight, 1) : 0);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+  return progress;
+}
+
 // ─── Reduced Motion Hook ─────────────────────────────────────────
 function usePrefersReducedMotion() {
   return useMediaQuery('(prefers-reduced-motion: reduce)');
@@ -605,6 +620,43 @@ function Phase1() {
         </div>
       </div>
 
+      {/* How it works flowchart */}
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: isMobile ? 16 : 24, marginBottom: 32 }}>
+        <div style={{ ...mono, fontSize: 10, color: T.textTer, marginBottom: 16, textAlign: 'center' }}>HOW .ONTO WORKS</div>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: isMobile ? 8 : 4 }}>
+          {[
+            { icon: '📊', label: 'Raw Indicators', sub: '3,100 signals', color: T.textSec },
+            { icon: '→', label: '', sub: '', color: T.textTer },
+            { icon: '🔗', label: 'Compile to Graph', sub: 'Nodes + Edges', color: T.accent },
+            { icon: '→', label: '', sub: '', color: T.textTer },
+            { icon: '⚡', label: 'Rule Engine', sub: '.onto syntax', color: T.aether },
+            { icon: '→', label: '', sub: '', color: T.textTer },
+            { icon: '🎯', label: 'Live Signal', sub: 'Sub-ms response', color: T.green },
+          ].map((step, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 + i * 0.12, duration: 0.4, ease: 'easeOut' }}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                minWidth: step.label ? (isMobile ? 80 : 100) : 24,
+              }}
+            >
+              {step.label ? (
+                <div style={{ textAlign: 'center', padding: '10px 8px', background: `${step.color}10`, borderRadius: 8, border: `1px solid ${step.color}25`, minWidth: isMobile ? 80 : 100 }}>
+                  <div style={{ fontSize: 20, marginBottom: 4 }}>{step.icon}</div>
+                  <div style={{ ...mono, fontSize: 10, color: step.color, fontWeight: 600 }}>{step.label}</div>
+                  <div style={{ ...mono, fontSize: 8, color: T.textTer, marginTop: 2 }}>{step.sub}</div>
+                </div>
+              ) : (
+                <span style={{ ...mono, fontSize: isMobile ? 14 : 18, color: T.textTer, transform: isMobile ? 'rotate(90deg)' : 'none' }}>{step.icon}</span>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
       <div style={{ textAlign: 'center', ...mono, fontSize: 13, color: T.textSec }}>
         Let&apos;s see the rule.
       </div>
@@ -617,8 +669,32 @@ function Phase2() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [linesVisible, setLinesVisible] = useState(0);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const codeLines = ONTO_FILE.split('\n');
   const codeRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Cmd+F / Ctrl+F to focus search (only when Phase 2 is active)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      if (e.key === 'Escape') {
+        setSearchQuery('');
+        searchInputRef.current?.blur();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const searchMatches = searchQuery.length >= 2 ? codeLines.reduce<number[]>((acc, line, i) => {
+    if (line.toLowerCase().includes(searchQuery.toLowerCase())) acc.push(i);
+    return acc;
+  }, []) : [];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -743,6 +819,35 @@ function Phase2() {
         </div>
       )}
 
+      {/* Search bar */}
+      {linesVisible >= codeLines.length && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <div style={{ flex: 1, position: 'relative' }}>
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              placeholder="Search .onto code… (⌘F)"
+              style={{
+                ...mono, fontSize: 12, width: '100%', padding: '6px 12px 6px 28px',
+                background: T.surface, border: `1px solid ${searchFocused ? T.accent + '60' : T.border}`,
+                borderRadius: 6, color: T.text, outline: 'none',
+                transition: 'border-color 0.2s ease',
+              }}
+            />
+            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', ...mono, fontSize: 11, color: T.textTer }}>⌕</span>
+          </div>
+          {searchQuery.length >= 2 && (
+            <span style={{ ...mono, fontSize: 10, color: searchMatches.length > 0 ? T.green : T.red, whiteSpace: 'nowrap' }}>
+              {searchMatches.length} match{searchMatches.length !== 1 ? 'es' : ''}
+            </span>
+          )}
+        </div>
+      )}
+
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 16px', borderBottom: `1px solid ${T.border}`, background: T.elevated }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -785,9 +890,9 @@ function Phase2() {
             const section = getSectionAtLine(i);
             const isCollapsed = section && collapsed[section.name];
             return (
-              <div key={i} style={{ display: 'flex', padding: '0 16px', lineHeight: 1.65, cursor: section ? 'pointer' : 'default', transition: 'background 0.1s ease' }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = `${T.accent}08`; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+              <div key={i} style={{ display: 'flex', padding: '0 16px', lineHeight: 1.65, cursor: section ? 'pointer' : 'default', transition: 'background 0.1s ease', background: searchMatches.includes(i) ? `${T.amber}15` : 'transparent' }}
+                onMouseEnter={(e) => { if (!searchMatches.includes(i)) (e.currentTarget as HTMLDivElement).style.background = `${T.accent}08`; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = searchMatches.includes(i) ? `${T.amber}15` : 'transparent'; }}
                 onClick={section ? () => setCollapsed(c => ({ ...c, [section.name]: !c[section.name] })) : undefined}>
                 <span style={{ ...mono, fontSize: 12, color: T.textTer, width: 36, textAlign: 'right', marginRight: 16, userSelect: 'none', flexShrink: 0 }}>{i + 1}</span>
                 {section && (
@@ -1356,7 +1461,7 @@ function Phase4() {
 }
 
 // ─── Footer ──────────────────────────────────────────────────────
-function Footer({ phase, setPhase }: { phase: number; setPhase: (p: number) => void }) {
+function Footer({ phase, setPhase, scrollProgress = 0 }: { phase: number; setPhase: (p: number) => void; scrollProgress?: number }) {
   const isMobile = useMediaQuery('(max-width: 768px)');
   return (
     <div style={{ borderTop: `1px solid ${T.border}`, padding: isMobile ? '16px' : '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 48, flexWrap: isMobile ? 'wrap' : 'nowrap', gap: isMobile ? 12 : 0 }}>
@@ -1377,6 +1482,10 @@ function Footer({ phase, setPhase }: { phase: number; setPhase: (p: number) => v
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ ...mono, fontSize: 9, color: T.textTer, minWidth: 28 }}>{Math.round(scrollProgress * 100)}%</span>
+        <div style={{ width: 40, height: 3, background: T.border, borderRadius: 2, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${scrollProgress * 100}%`, background: T.accent, borderRadius: 2, transition: 'width 0.1s ease' }} />
+        </div>
         <span style={{ ...mono, fontSize: 10, color: T.textTer }}>← → or swipe</span>
         <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
           {PHASE_NAMES.map((_, i) => (
@@ -1400,6 +1509,7 @@ export default function Page() {
   const [loaded, setLoaded] = useState(false);
   const [autoAdvance, setAutoAdvance] = useState(false);
   const reducedMotion = usePrefersReducedMotion();
+  const scrollProgress = useScrollProgress();
   const PhaseComponent = PHASES_COMPONENTS[phase];
 
   useEffect(() => {
@@ -1476,7 +1586,7 @@ export default function Page() {
         </AnimatePresence>
         </main>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.3 }}>
-          <Footer phase={phase} setPhase={setPhase} />
+          <Footer phase={phase} setPhase={setPhase} scrollProgress={scrollProgress} />
         </motion.div>
       </div>
     </motion.div>
