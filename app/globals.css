@@ -2,26 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { overflow-x: hidden; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0A0E17; }
+::-webkit-scrollbar-thumb { background: #1F2937; border-radius: 3px; }
+::selection { background: rgba(99, 102, 241, 0.3); }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
 }
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-}
+.cursor-blink { animation: blink 1s step-end infinite; }
