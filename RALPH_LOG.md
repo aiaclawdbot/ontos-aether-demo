@@ -9,20 +9,20 @@ This is a Next.js 14 interactive demo showing Ontos' compiled reasoning engine a
 Live URL: Deployed on Vercel (ontos-aether-demo project).
 
 ## Backlog
-- [ ] Auto-advance option: phases auto-play like a presentation
-- [ ] Phase 2: Add collapsible sections for the .onto code (classes vs rules)
 - [ ] Phase 3: Add a timeline/sparkline showing S&P 500 price with the two tick dates marked
 - [ ] Phase 3: Add sound effects toggle (optional terminal typing sounds)
 - [ ] Accessibility — aria labels, focus management, screen reader support
 - [ ] Performance — lazy load phases, reduce bundle size
 - [ ] Phase 3 done state: add a mini graph visualization showing the 4-hop traversal path
-- [ ] Extract hardcoded data (tick output, chat messages, onto code) into separate files
 - [ ] TypeScript strict mode — fix any type issues
-- [ ] Add error boundary around each phase
-- [ ] Add touch/swipe gesture support for mobile phase navigation
 - [ ] OG image — generate or add a static og:image for social sharing
 
 ## Completed
+- [x] Auto-advance option: phases auto-play like a presentation (15s per phase, toggle in header)
+- [x] Phase 2: Add collapsible sections for the .onto code (click section headers to collapse)
+- [x] Extract hardcoded data (tick output, chat messages, onto code) into separate data.ts file
+- [x] Add error boundary around each phase (with retry button)
+- [x] Add touch/swipe gesture support for mobile phase navigation (50px threshold)
 - [x] Add a progress bar at top showing which phase you're on
 - [x] Add keyboard navigation between phases (arrow keys + number keys 1-4)
 - [x] Phase 3: Terminal should have a blinking cursor
@@ -41,6 +41,15 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [x] Subtle grid background animation with radial glow (non-distracting, adds depth)
 
 ## Iteration History
+
+### Iteration 4 — 2026-02-24T07:48+01:00
+- Extracted all hardcoded data (T tokens, ONTO_FILE, TICK1/2_OUTPUT, CHAT_MESSAGES, PHASE_NAMES) into app/data.ts
+- Created ErrorBoundary component (app/ErrorBoundary.tsx) wrapping each phase with retry
+- Added touch/swipe gesture support via useSwipe hook (horizontal swipe >50px navigates phases)
+- Added auto-advance toggle in header — cycles phases every 15s like a presentation
+- Phase 2: collapsible code sections — click class/rule/relationship headers to fold/unfold with line count
+- Footer hint updated to "← → or swipe"
+- Build: ✓ | Deploy: ✓ (Vercel prod)
 
 ### Iteration 3 — 2026-02-24T07:33+01:00
 - Phase 2 syntax highlighting: semantic colorization — keywords (purple), type names (amber), strings (green), numbers (blue), comments (dim italic), identifiers (cyan)
