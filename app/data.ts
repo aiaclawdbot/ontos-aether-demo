@@ -240,4 +240,33 @@ export const CHAT_MESSAGES = [
 [View Graph Traversal Path] [View Provenance Chain] [View Full Event Timeline]`,
     delay: 1500,
   },
+  {
+    role: 'user' as const,
+    text: 'What\'s the optimal hedge ratio for this scenario?',
+    delay: 0,
+  },
+  {
+    role: 'agent' as const,
+    text: `Based on the compiled graph state and historical regime analysis:
+
+**Recommended hedge ratio: 0.62× notional tech exposure**
+
+1. **VIX call spread:** Buy Aug 20/30 call spread at **1.8:1 ratio**
+   Current VIX at 14.2 → modeled fair value under carry unwind: 38-52
+   → Provenance: VIX term structure node + 847 historical regime matches
+
+2. **JPY/USD position:** Long Yen at **0.15× portfolio NAV**
+   Yen carry unwind historically amplifies equity vol by 2.3×
+   → Provenance: JPY_Vol → EquityVol edge, correlation 0.87
+
+3. **De-gross tech longs by 40%** — breadth collapse implies distribution
+   McClellan at -45 with index near highs = classic stealth distribution
+   → Provenance: McClellan → TechBreadth → IndexDivergence path
+
+**Expected P&L under scenario:** +3.2% portfolio vs -8.5% unhedged
+**Confidence interval:** 89% (based on 31 connected nodes, 4-hop traversal)
+
+[Execute Hedge] [Backtest This Scenario] [Export to OMS]`,
+    delay: 1500,
+  },
 ];

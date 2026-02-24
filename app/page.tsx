@@ -92,6 +92,52 @@ function renderInline(text: string) {
   });
 }
 
+// ─── Floating Particles ──────────────────────────────────────────
+function FloatingParticles() {
+  const particles = useRef(
+    Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 1 + Math.random() * 2,
+      duration: 15 + Math.random() * 25,
+      delay: Math.random() * 10,
+      opacity: 0.15 + Math.random() * 0.25,
+    }))
+  ).current;
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+      {particles.map(p => (
+        <motion.div
+          key={p.id}
+          style={{
+            position: 'absolute',
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: p.size,
+            height: p.size,
+            borderRadius: '50%',
+            background: T.accent,
+            opacity: p.opacity,
+          }}
+          animate={{
+            y: [0, -40, 0],
+            x: [0, Math.random() > 0.5 ? 20 : -20, 0],
+            opacity: [p.opacity, p.opacity * 0.4, p.opacity],
+          }}
+          transition={{
+            duration: p.duration,
+            repeat: Infinity,
+            delay: p.delay,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ─── Grid Background ─────────────────────────────────────────────
 function GridBackground() {
   return (
@@ -233,8 +279,21 @@ function Phase1() {
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ ...mono, fontSize: 14, color: T.textTer }}>vs.</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <motion.div
+            animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ width: 48, height: 48, borderRadius: '50%', border: `2px solid ${T.red}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `${T.red}08` }}
+          >
+            <div style={{ ...mono, fontSize: 14, fontWeight: 700, color: T.red }}>vs</div>
+          </motion.div>
+          {/* Vertical connecting lines on desktop */}
+          {!isMobile && (
+            <>
+              <div style={{ position: 'absolute', top: 0, left: '50%', width: 1, height: 'calc(50% - 30px)', background: `linear-gradient(to bottom, ${T.border}, ${T.red}40)`, transform: 'translateX(-50%)' }} />
+              <div style={{ position: 'absolute', bottom: 0, left: '50%', width: 1, height: 'calc(50% - 30px)', background: `linear-gradient(to top, ${T.border}, ${T.red}40)`, transform: 'translateX(-50%)' }} />
+            </>
+          )}
         </div>
         <div style={{ background: T.surface, border: `1px solid ${T.accent}30`, borderRadius: isMobile ? 8 : '0 8px 8px 0', padding: isMobile ? 16 : 24 }}>
           <div style={{ ...mono, fontSize: 11, color: T.accent, marginBottom: 16 }}>ONTOS COMPILED GRAPH</div>
@@ -400,6 +459,23 @@ function Phase2() {
               {linesVisible >= codeLines.length ? '✓ Compiled' : '● Compiling...'}
             </span>
           </div>
+        </div>
+
+        {/* Compilation progress bar */}
+        <div style={{ height: 3, background: T.border }}>
+          <motion.div
+            style={{ height: '100%', background: linesVisible >= codeLines.length ? T.green : `linear-gradient(90deg, ${T.accent}, ${T.aether})`, borderRadius: '0 2px 2px 0' }}
+            animate={{ width: `${Math.min((linesVisible / codeLines.length) * 100, 100)}%` }}
+            transition={{ duration: 0.2 }}
+          />
+        </div>
+        <div style={{ padding: '4px 16px', display: 'flex', justifyContent: 'space-between', borderBottom: `1px solid ${T.border}` }}>
+          <span style={{ ...mono, fontSize: 9, color: T.textTer }}>
+            {linesVisible >= codeLines.length ? '✓ Compilation complete' : `Compiling: ${Math.round((linesVisible / codeLines.length) * 100)}%`}
+          </span>
+          <span style={{ ...mono, fontSize: 9, color: linesVisible >= codeLines.length ? T.green : T.amber }}>
+            {linesVisible >= codeLines.length ? 'ontology.compiled → runtime' : `parsing line ${Math.min(linesVisible, codeLines.length)}...`}
+          </span>
         </div>
 
         <div ref={codeRef} style={{ maxHeight: 580, overflowY: 'auto', padding: '12px 0' }}>
@@ -709,22 +785,30 @@ function Phase4() {
   const [typingText, setTypingText] = useState('');
   const chatRef = useRef<HTMLDivElement>(null);
 
+  const typeMessage = (msgIndex: number, nextStep: number) => {
+    setTyping(true);
+    setTypingText('');
+    const fullText = CHAT_MESSAGES[msgIndex].text;
+    let i = 0;
+    const typeNext = () => {
+      if (i >= fullText.length) { setTyping(false); setChatStep(nextStep); return; }
+      const char = fullText[i];
+      const delay = char === '\n' ? 40 + Math.random() * 80 : char === ' ' ? 10 + Math.random() * 20 : char === '*' ? 5 : 8 + Math.random() * 18;
+      i++;
+      setTypingText(fullText.slice(0, i));
+      setTimeout(typeNext, delay);
+    };
+    typeNext();
+  };
+
   const startChat = () => {
     setChatStep(1);
-    setTimeout(() => {
-      setTyping(true);
-      const fullText = CHAT_MESSAGES[1].text;
-      let i = 0;
-      const typeNext = () => {
-        if (i >= fullText.length) { setTyping(false); setChatStep(2); return; }
-        const char = fullText[i];
-        const delay = char === '\n' ? 40 + Math.random() * 80 : char === ' ' ? 10 + Math.random() * 20 : char === '*' ? 5 : 8 + Math.random() * 18;
-        i++;
-        setTypingText(fullText.slice(0, i));
-        setTimeout(typeNext, delay);
-      };
-      typeNext();
-    }, 800);
+    setTimeout(() => typeMessage(1, 2), 800);
+  };
+
+  const askFollowUp = () => {
+    setChatStep(3);
+    setTimeout(() => typeMessage(3, 4), 800);
   };
 
   useEffect(() => {
@@ -775,7 +859,7 @@ function Phase4() {
                 </div>
               </div>
             )}
-            {typing && typingText && (
+            {typing && chatStep === 1 && typingText && (
               <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}20`, borderRadius: '12px 12px 12px 2px', padding: '14px 16px' }}>
                 <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8, whiteSpace: 'pre-wrap', opacity: 0.8 }}>
                   {typingText}
@@ -793,9 +877,44 @@ function Phase4() {
             )}
             {chatStep >= 2 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}20`, borderRadius: '12px 12px 12px 2px', padding: '14px 16px' }}>
+                <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}20`, borderRadius: '12px 12px 12px 2px', padding: '14px 16px', marginBottom: 16 }}>
                   <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8 }}>
                     <RenderMarkdown text={CHAT_MESSAGES[1].text} />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+            {/* Follow-up question button */}
+            {chatStep === 2 && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                <button onClick={askFollowUp} style={{ ...mono, fontSize: 11, padding: '8px 16px', background: T.elevated, color: T.accent, border: `1px solid ${T.accent}30`, borderRadius: 20, cursor: 'pointer', transition: 'all 0.2s ease' }}>
+                  Ask: &quot;What&apos;s the optimal hedge ratio?&quot; →
+                </button>
+              </motion.div>
+            )}
+            {/* Follow-up user message */}
+            {chatStep >= 3 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                <div style={{ background: T.elevated, borderRadius: '12px 12px 2px 12px', padding: '10px 14px', maxWidth: '80%' }}>
+                  <div style={{ fontSize: 13, color: T.text }}>{CHAT_MESSAGES[2].text}</div>
+                </div>
+              </div>
+            )}
+            {/* Follow-up agent typing */}
+            {typing && chatStep === 3 && typingText && (
+              <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}20`, borderRadius: '12px 12px 12px 2px', padding: '14px 16px' }}>
+                <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8, whiteSpace: 'pre-wrap', opacity: 0.8 }}>
+                  {typingText}
+                  <motion.span animate={{ opacity: [1, 0] }} transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }} style={{ color: T.accent }}>▋</motion.span>
+                </div>
+              </div>
+            )}
+            {/* Follow-up agent response complete */}
+            {chatStep >= 4 && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}20`, borderRadius: '12px 12px 12px 2px', padding: '14px 16px' }}>
+                  <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8 }}>
+                    <RenderMarkdown text={CHAT_MESSAGES[3].text} />
                   </div>
                 </div>
               </motion.div>
@@ -921,6 +1040,7 @@ export default function Page() {
         Skip to content
       </a>
       <GridBackground />
+      <FloatingParticles />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <Header phase={phase} setPhase={setPhase} autoAdvance={autoAdvance} setAutoAdvance={setAutoAdvance} />
         <main id="main-content" role="main" aria-label={`Phase ${phase + 1}: ${PHASE_NAMES[phase]}`}>
