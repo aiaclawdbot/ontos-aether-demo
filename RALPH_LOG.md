@@ -13,10 +13,10 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [ ] Performance — lazy load phases, reduce bundle size (currently 57kB page JS)
 - [ ] Mobile: Bottom sheet navigation drawer instead of compressed header tabs
 - [ ] Phase 1: Add animated "How it works" flowchart below the comparison grid
-- [ ] Add prefers-reduced-motion support (disable animations for accessibility)
 - [ ] Phase 3: Add a "timeline scrubber" to jump to any point in the tick sequence
-- [ ] Phase 2: Add line highlight on hover in code editor
-- [ ] Add micro-interaction: button press ripple effect on all CTA buttons
+- [ ] Add subtle text reveal animation on phase headings (letter-by-letter or word-by-word)
+- [ ] Phase 1: Add animated "benchmark" comparison showing pipeline time vs .onto time
+- [ ] Phase 4: Add "confidence meter" that fills as agent types response
 
 ## Completed
 - [x] Add favicon with Ontos "O" branding — SVG favicon with purple rounded rect + white "O"
@@ -64,8 +64,18 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [x] Phase 4: Chat response renders markdown properly via RenderMarkdown component (bold, numbered lists, bullets, link buttons)
 - [x] Loading state / skeleton for initial page load (animated Ontos logo + "Loading compiled graph...")
 - [x] Subtle grid background animation with radial glow (non-distracting, adds depth)
+- [x] Add prefers-reduced-motion support (CSS + JS: disables particles, reduces all animation durations)
+- [x] Phase 2: Line highlight on hover in code editor (subtle accent background on hover)
+- [x] Button press ripple effect on CTA buttons (RippleButton component with CSS animation)
 
 ## Iteration History
+
+### Iteration 11 — 2026-02-24T09:33+01:00
+- Prefers-reduced-motion: CSS media query disables all animations; JS hook hides floating particles for accessibility
+- Phase 2 line highlight: code editor lines highlight with subtle accent background on mouse hover
+- Ripple button: new RippleButton component with CSS ripple animation on click, applied to Phase 3 tick buttons and Phase 4 chat start
+- Added 3 new backlog items (text reveal animation, benchmark comparison, confidence meter)
+- Build: ✓ (57.8kB page JS) | Deploy: ✓ (Vercel prod)
 
 ### Iteration 10 — 2026-02-24T09:18+01:00
 - Favicon: SVG icon with Ontos purple "O" branding, replaces default Next.js favicon
