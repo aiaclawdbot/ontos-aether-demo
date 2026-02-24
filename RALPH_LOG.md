@@ -10,13 +10,9 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 
 ## Backlog
 - [ ] Auto-advance option: phases auto-play like a presentation
-- [ ] Phase 2: Syntax highlighting improvements — keywords, strings, comments should be more distinct
 - [ ] Phase 2: Add collapsible sections for the .onto code (classes vs rules)
 - [ ] Phase 3: Add a timeline/sparkline showing S&P 500 price with the two tick dates marked
 - [ ] Phase 3: Add sound effects toggle (optional terminal typing sounds)
-- [ ] Phase 4: Chat response should render markdown properly (bold, bullets, numbered lists)
-- [ ] Loading state / skeleton for initial page load
-- [ ] Add subtle particle/grid background animation (very subtle, not distracting)
 - [ ] Accessibility — aria labels, focus management, screen reader support
 - [ ] Performance — lazy load phases, reduce bundle size
 - [ ] Phase 3 done state: add a mini graph visualization showing the 4-hop traversal path
@@ -39,8 +35,19 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [x] Meta tags — og:title, og:description, twitter card metadata
 - [x] Phase 4: Variable-speed typing with streaming text + cursor (replaces dots)
 - [x] Smooth scroll to top when switching phases
+- [x] Phase 2: Syntax highlighting improvements — keywords/types/strings/numbers distinctly colored with semantic highlighting
+- [x] Phase 4: Chat response renders markdown properly via RenderMarkdown component (bold, numbered lists, bullets, link buttons)
+- [x] Loading state / skeleton for initial page load (animated Ontos logo + "Loading compiled graph...")
+- [x] Subtle grid background animation with radial glow (non-distracting, adds depth)
 
 ## Iteration History
+
+### Iteration 3 — 2026-02-24T07:33+01:00
+- Phase 2 syntax highlighting: semantic colorization — keywords (purple), type names (amber), strings (green), numbers (blue), comments (dim italic), identifiers (cyan)
+- Phase 4 markdown: new RenderMarkdown component handles **bold**, numbered lists, bullets, link buttons cleanly
+- Loading skeleton: 800ms branded splash with pulsing Ontos logo before app renders
+- Grid background: subtle 60px grid lines + radial glow at top — adds cinematic depth without distraction
+- Build: ✓ | Deploy: ✓ (Vercel prod)
 
 ### Iteration 2 — 2026-02-24T07:18+01:00
 - Responsive design: useMediaQuery hook, mobile breakpoints for all 4 phases + header + footer

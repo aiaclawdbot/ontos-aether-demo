@@ -34,6 +34,89 @@ function useAnimatedCounter(target: number, duration = 1500, start = true) {
   return value;
 }
 
+// ─── Markdown Renderer ───────────────────────────────────────────
+function RenderMarkdown({ text }: { text: string }) {
+  const lines = text.split('\n');
+  return (
+    <>
+      {lines.map((line, i) => {
+        // Links row: [View X] [View Y]
+        if (line.startsWith('[')) {
+          return (
+            <div key={i} style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {line.match(/\[([^\]]+)\]/g)?.map((link, j) => (
+                <span key={j} style={{ ...mono, fontSize: 10, color: T.accent, background: `${T.accent}15`, padding: '4px 10px', borderRadius: 4, cursor: 'pointer' }}>
+                  {link.replace(/[\[\]]/g, '')}
+                </span>
+              ))}
+            </div>
+          );
+        }
+        // Numbered list items
+        if (/^\d+\.\s/.test(line)) {
+          return <div key={i} style={{ paddingLeft: 8, marginTop: 4 }}>{renderInline(line)}</div>;
+        }
+        // Bullet items
+        if (line.startsWith('- ')) {
+          return <div key={i} style={{ paddingLeft: 12, marginTop: 2 }}>{renderInline('• ' + line.slice(2))}</div>;
+        }
+        // Empty line = spacer
+        if (!line.trim()) return <div key={i} style={{ height: 6 }} />;
+        // Regular line with inline formatting
+        return <div key={i} style={{ marginTop: 2 }}>{renderInline(line)}</div>;
+      })}
+    </>
+  );
+}
+
+function renderInline(text: string) {
+  // Split by **bold** markers
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+// ─── Subtle Grid Background ─────────────────────────────────────
+function GridBackground() {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+      backgroundImage: `
+        linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px)
+      `,
+      backgroundSize: '60px 60px',
+    }}>
+      {/* Radial glow at top */}
+      <div style={{
+        position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+        width: '80%', height: 400,
+        background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.06) 0%, transparent 70%)',
+      }} />
+    </div>
+  );
+}
+
+// ─── Loading Skeleton ────────────────────────────────────────────
+function LoadingSkeleton() {
+  return (
+    <div style={{ minHeight: '100vh', background: '#0A0E17', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <motion.div
+        animate={{ opacity: [0.3, 1, 0.3] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+        style={{ textAlign: 'center' }}
+      >
+        <div style={{ width: 40, height: 40, borderRadius: 8, background: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 18, color: '#fff', margin: '0 auto 12px' }}>O</div>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#484F58' }}>Loading compiled graph...</div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Design Tokens ───────────────────────────────────────────────
 const T = {
   bg: '#0A0E17', surface: '#0D1117', elevated: '#161B22', border: '#21262D',
@@ -438,17 +521,69 @@ function Phase2() {
     if (codeRef.current) codeRef.current.scrollTop = codeRef.current.scrollHeight;
   }, [linesVisible]);
 
-  const colorize = (line: string): string => {
+  const colorizeLine = (line: string): React.ReactNode => {
     const trimmed = line.trim();
-    if (trimmed.startsWith('//')) return T.textTer;
-    if (trimmed.startsWith('@')) return T.accent;
-    if (trimmed.startsWith('rule ') || trimmed.startsWith('class ') || trimmed.startsWith('relationship ')) return T.aether;
-    if (trimmed.startsWith('match ') || trimmed.startsWith('where ') || trimmed.startsWith('then ') || trimmed.startsWith('and ')) return T.accent;
-    if (line.includes('String') || line.includes('Float') || line.includes('Integer') || line.includes('List') || line.includes('Map') || line.includes('Enum') || line.includes('Boolean')) return T.amber;
-    if (line.includes('"')) return T.green;
-    if (line.includes('✓')) return T.green;
-    if (line.includes('< 25') || line.includes('> 2.0') || line.includes('0.70') || line.includes('> 1.2')) return T.amber;
-    return T.textSec;
+    // Comments — dim italic
+    if (trimmed.startsWith('//')) return <span style={{ color: T.textTer, fontStyle: 'italic' }}>{line}</span>;
+    // Decorators
+    if (trimmed.startsWith('@')) return <span style={{ color: T.accent, fontWeight: 600 }}>{line}</span>;
+    // Keywords: rule, class, relationship, extends
+    if (/^\s*(rule|class|relationship)\s/.test(line)) {
+      return highlightTokens(line, { keywords: [trimmed.split(/\s/)[0]], nameColor: T.text });
+    }
+    // Control flow: match, where, and, then
+    if (/^\s*(match|where|then|and)\s/.test(line)) {
+      return highlightTokens(line, { keywords: [trimmed.split(/\s/)[0]] });
+    }
+    // Lines with string literals
+    if (line.includes('"')) return highlightStringsAndTypes(line);
+    // Lines with types
+    if (/\b(String|Float|Integer|List|Map|Enum|Boolean|TimeSeries|Reference)\b/.test(line)) return highlightStringsAndTypes(line);
+    return <span style={{ color: T.textSec }}>{line}</span>;
+  };
+
+  const highlightTokens = (line: string, opts: { keywords: string[]; nameColor?: string }): React.ReactNode => {
+    const keyword = opts.keywords[0];
+    const idx = line.indexOf(keyword);
+    const before = line.slice(0, idx);
+    const after = line.slice(idx + keyword.length);
+    const nameMatch = after.match(/^\s+(\w+)/);
+    if (nameMatch) {
+      const nameStart = after.indexOf(nameMatch[1]);
+      return (
+        <span style={{ color: T.textSec }}>
+          {before}<span style={{ color: T.aether, fontWeight: 600 }}>{keyword}</span>
+          {after.slice(0, nameStart)}<span style={{ color: opts.nameColor || T.cyan, fontWeight: 600 }}>{nameMatch[1]}</span>
+          {highlightStringsAndTypes(after.slice(nameStart + nameMatch[1].length))}
+        </span>
+      );
+    }
+    return <span style={{ color: T.textSec }}>{before}<span style={{ color: T.accent, fontWeight: 600 }}>{keyword}</span>{highlightStringsAndTypes(after)}</span>;
+  };
+
+  const highlightStringsAndTypes = (text: string): React.ReactNode => {
+    // Split on strings and type keywords
+    const parts = text.split(/("(?:[^"\\]|\\.)*")/g);
+    return (
+      <span style={{ color: T.textSec }}>
+        {parts.map((part, i) => {
+          if (part.startsWith('"')) return <span key={i} style={{ color: T.green }}>{part}</span>;
+          // Highlight type keywords within non-string parts
+          const typeParts = part.split(/\b(String|Float|Integer|List|Map|Enum|Boolean|TimeSeries|Reference)\b/g);
+          return typeParts.map((tp, j) => {
+            if (/^(String|Float|Integer|List|Map|Enum|Boolean|TimeSeries|Reference)$/.test(tp)) {
+              return <span key={`${i}-${j}`} style={{ color: T.amber }}>{tp}</span>;
+            }
+            // Highlight numbers
+            const numParts = tp.split(/\b(\d+[\d._]*\w*)\b/g);
+            return numParts.map((np, k) => {
+              if (/^\d/.test(np)) return <span key={`${i}-${j}-${k}`} style={{ color: T.blue }}>{np}</span>;
+              return <span key={`${i}-${j}-${k}`}>{np}</span>;
+            });
+          });
+        })}
+      </span>
+    );
   };
 
   // Highlight the contagion rule section
@@ -494,7 +629,7 @@ function Phase2() {
               background: isRuleLine(i) ? `${T.accent}06` : 'transparent',
             }}>
               <span style={{ ...mono, fontSize: 12, color: T.textTer, width: 36, textAlign: 'right', marginRight: 16, userSelect: 'none', flexShrink: 0 }}>{i + 1}</span>
-              <span style={{ ...mono, fontSize: 12, color: colorize(line), whiteSpace: 'pre' }}>{line}</span>
+              <span style={{ ...mono, fontSize: 12, whiteSpace: 'pre' }}>{colorizeLine(line)}</span>
             </div>
           ))}
         </div>
@@ -787,34 +922,8 @@ function Phase4() {
             {chatStep >= 2 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}20`, borderRadius: '12px 12px 12px 2px', padding: '14px 16px' }}>
-                  <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
-                    {CHAT_MESSAGES[1].text.split('\n').map((line, i) => {
-                      if (line.startsWith('**') && line.endsWith('**')) {
-                        return <div key={i} style={{ fontWeight: 700, marginTop: 8, marginBottom: 4 }}>{line.replace(/\*\*/g, '')}</div>;
-                      }
-                      if (line.startsWith('**')) {
-                        const parts = line.split('**');
-                        return (
-                          <div key={i} style={{ marginTop: 4 }}>
-                            {parts.map((part, j) => (
-                              j % 2 === 1 ? <strong key={j}>{part}</strong> : <span key={j}>{part}</span>
-                            ))}
-                          </div>
-                        );
-                      }
-                      if (line.startsWith('[')) {
-                        return (
-                          <div key={i} style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-                            {line.match(/\[([^\]]+)\]/g)?.map((link, j) => (
-                              <span key={j} style={{ ...mono, fontSize: 10, color: T.accent, background: `${T.accent}15`, padding: '4px 10px', borderRadius: 4, cursor: 'pointer' }}>
-                                {link.replace(/[\[\]]/g, '')}
-                              </span>
-                            ))}
-                          </div>
-                        );
-                      }
-                      return <div key={i}>{line}</div>;
-                    })}
+                  <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8 }}>
+                    <RenderMarkdown text={CHAT_MESSAGES[1].text} />
                   </div>
                 </div>
               </motion.div>
@@ -898,7 +1007,13 @@ const PHASES_COMPONENTS = [Phase1, Phase2, Phase3, Phase4];
 
 export default function Page() {
   const [phase, setPhase] = useState(0);
+  const [loaded, setLoaded] = useState(false);
   const PhaseComponent = PHASES_COMPONENTS[phase];
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoaded(true), 800);
+    return () => clearTimeout(t);
+  }, []);
 
   // Smooth scroll to top on phase change
   useEffect(() => {
@@ -923,15 +1038,20 @@ export default function Page() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
+  if (!loaded) return <LoadingSkeleton />;
+
   return (
-    <div style={{ background: T.bg, minHeight: '100vh', color: T.text, fontFamily: "'Inter', sans-serif" }}>
-      <Header phase={phase} setPhase={setPhase} />
-      <AnimatePresence mode="wait">
-        <motion.div key={phase} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.3, ease: 'easeOut' }}>
-          <PhaseComponent />
-        </motion.div>
-      </AnimatePresence>
-      <Footer phase={phase} setPhase={setPhase} />
+    <div style={{ background: T.bg, minHeight: '100vh', color: T.text, fontFamily: "'Inter', sans-serif", position: 'relative' }}>
+      <GridBackground />
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <Header phase={phase} setPhase={setPhase} />
+        <AnimatePresence mode="wait">
+          <motion.div key={phase} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.3, ease: 'easeOut' }}>
+            <PhaseComponent />
+          </motion.div>
+        </AnimatePresence>
+        <Footer phase={phase} setPhase={setPhase} />
+      </div>
     </div>
   );
 }
