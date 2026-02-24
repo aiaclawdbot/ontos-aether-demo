@@ -117,6 +117,61 @@ function StatCard({ value, label, color }: { value: string; label: string; color
   );
 }
 
+// ─── Share Demo Button ───────────────────────────────────────────
+function ShareButton() {
+  const [copied, setCopied] = useState(false);
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button onClick={handleShare} title="Copy demo link" style={{
+      ...mono, fontSize: 10, color: copied ? T.green : T.textTer,
+      background: copied ? `${T.green}10` : 'transparent',
+      border: `1px solid ${copied ? T.green + '40' : T.border}`,
+      borderRadius: 4, padding: '4px 8px', cursor: 'pointer', transition: 'all 0.2s ease',
+    }}>
+      {copied ? '✓ Link copied' : '🔗 Share'}
+    </button>
+  );
+}
+
+// ─── Risk Gauge (Speedometer) ────────────────────────────────────
+function RiskGauge({ value, max = 1, label }: { value: number; max?: number; label: string }) {
+  const pct = Math.min(value / max, 1);
+  const angle = -90 + pct * 180; // -90 = left, 90 = right
+  const color = pct < 0.4 ? T.green : pct < 0.7 ? T.amber : T.red;
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <svg width={80} height={50} viewBox="0 0 80 50" aria-label={`Risk gauge: ${label} at ${Math.round(pct * 100)}%`}>
+        {/* Background arc */}
+        <path d="M 8 46 A 32 32 0 0 1 72 46" fill="none" stroke={T.border} strokeWidth={4} strokeLinecap="round" />
+        {/* Filled arc */}
+        <motion.path
+          d="M 8 46 A 32 32 0 0 1 72 46"
+          fill="none" stroke={color} strokeWidth={4} strokeLinecap="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: pct }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+        />
+        {/* Needle */}
+        <motion.line
+          x1={40} y1={46} x2={40} y2={18}
+          stroke={color} strokeWidth={2} strokeLinecap="round"
+          style={{ transformOrigin: '40px 46px' }}
+          initial={{ rotate: -90 }}
+          animate={{ rotate: angle }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+        />
+        <circle cx={40} cy={46} r={3} fill={color} />
+      </svg>
+      <div style={{ ...mono, fontSize: 9, color, marginTop: -2 }}>{label}</div>
+    </div>
+  );
+}
+
 // ─── Floating Book a Demo CTA ────────────────────────────────────
 function FloatingCTA({ visible }: { visible: boolean }) {
   return (
@@ -280,6 +335,7 @@ function Header({ phase, setPhase, autoAdvance, setAutoAdvance }: { phase: numbe
           ))}
         </nav>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <ShareButton />
           {/* Auto-advance toggle */}
           <button
             onClick={() => setAutoAdvance(!autoAdvance)}
@@ -851,6 +907,15 @@ function Phase3() {
         </div>
       </div>
 
+      {/* Risk Gauge — shows during tick2 and done */}
+      {(phase === 'tick2' || phase === 'done') && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 16, display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'center', background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '12px 24px' }}>
+          <RiskGauge value={phase === 'done' ? 0.94 : tick2Index / TICK2_OUTPUT.length} label="CONFIDENCE" />
+          <RiskGauge value={phase === 'done' ? 0.87 : (tick2Index / TICK2_OUTPUT.length) * 0.87} label="CORRELATION" />
+          <RiskGauge value={phase === 'done' ? 0.92 : (tick2Index / TICK2_OUTPUT.length) * 0.92} label="RISK LEVEL" />
+        </motion.div>
+      )}
+
       {phase === 'done' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr', gap: 12 }}>
@@ -921,6 +986,11 @@ function Phase4() {
   const askFollowUp = () => {
     setChatStep(3);
     setTimeout(() => typeMessage(3, 4), 800);
+  };
+
+  const askFollowUp2 = () => {
+    setChatStep(5);
+    setTimeout(() => typeMessage(5, 6), 800);
   };
 
   useEffect(() => {
@@ -1025,11 +1095,47 @@ function Phase4() {
             {/* Follow-up agent response complete */}
             {chatStep >= 4 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}20`, borderRadius: '12px 12px 12px 2px', padding: '14px 16px' }}>
+                <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}20`, borderRadius: '12px 12px 12px 2px', padding: '14px 16px', marginBottom: 16 }}>
                   <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8 }}>
                     <RenderMarkdown text={CHAT_MESSAGES[3].text} />
                   </div>
                   <CopyButton text={CHAT_MESSAGES[3].text} />
+                </div>
+              </motion.div>
+            )}
+            {/* Third follow-up button */}
+            {chatStep === 4 && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                <button onClick={askFollowUp2} style={{ ...mono, fontSize: 11, padding: '8px 16px', background: T.elevated, color: T.accent, border: `1px solid ${T.accent}30`, borderRadius: 20, cursor: 'pointer', transition: 'all 0.2s ease' }}>
+                  Ask: &quot;What if we ignored this signal?&quot; →
+                </button>
+              </motion.div>
+            )}
+            {/* Third follow-up user message */}
+            {chatStep >= 5 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                <div style={{ background: T.elevated, borderRadius: '12px 12px 2px 12px', padding: '10px 14px', maxWidth: '80%' }}>
+                  <div style={{ fontSize: 13, color: T.text }}>{CHAT_MESSAGES[4].text}</div>
+                </div>
+              </div>
+            )}
+            {/* Third follow-up typing */}
+            {typing && chatStep === 5 && typingText && (
+              <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}20`, borderRadius: '12px 12px 12px 2px', padding: '14px 16px' }}>
+                <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8, whiteSpace: 'pre-wrap', opacity: 0.8 }}>
+                  {typingText}
+                  <motion.span animate={{ opacity: [1, 0] }} transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }} style={{ color: T.accent }}>▋</motion.span>
+                </div>
+              </div>
+            )}
+            {/* Third follow-up complete */}
+            {chatStep >= 6 && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}20`, borderRadius: '12px 12px 12px 2px', padding: '14px 16px' }}>
+                  <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8 }}>
+                    <RenderMarkdown text={CHAT_MESSAGES[5].text} />
+                  </div>
+                  <CopyButton text={CHAT_MESSAGES[5].text} />
                 </div>
               </motion.div>
             )}
@@ -1043,10 +1149,16 @@ function Phase4() {
           <span style={{ color: T.accent, fontWeight: 700 }}>The .onto runtime</span> is the only technology that allows your AI agents to read, reason over, and execute on those 3,100 signals — <span style={{ color: T.green }}>deterministically, in milliseconds, without hallucinating.</span>
         </div>
         <div style={{ marginTop: 32 }}>
-          <a href="https://cal.com/michael-walker-pamuoj/ontos" target="_blank" rel="noopener noreferrer"
-            style={{ display: 'inline-block', padding: '14px 40px', background: T.accent, color: '#fff', textDecoration: 'none', borderRadius: 6, fontWeight: 700, fontSize: 15 }}>
-            See your indicators compiled → 48h, no cost
-          </a>
+          <motion.div
+            style={{ display: 'inline-block', padding: 2, borderRadius: 8, background: `linear-gradient(135deg, ${T.accent}, ${T.aether}, ${T.cyan}, ${T.accent})`, backgroundSize: '300% 300%' }}
+            animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+          >
+            <a href="https://cal.com/michael-walker-pamuoj/ontos" target="_blank" rel="noopener noreferrer"
+              style={{ display: 'inline-block', padding: '14px 40px', background: T.bg, color: '#fff', textDecoration: 'none', borderRadius: 6, fontWeight: 700, fontSize: 15 }}>
+              See your indicators compiled → 48h, no cost
+            </a>
+          </motion.div>
           <div style={{ ...mono, fontSize: 11, color: T.textTer, marginTop: 10 }}>cal.com/michael-walker-pamuoj/ontos</div>
         </div>
       </div>

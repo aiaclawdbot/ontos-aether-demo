@@ -269,4 +269,32 @@ export const CHAT_MESSAGES = [
 [Execute Hedge] [Backtest This Scenario] [Export to OMS]`,
     delay: 1500,
   },
+  {
+    role: 'user' as const,
+    text: 'Show me the portfolio-level impact if we had ignored this signal.',
+    delay: 0,
+  },
+  {
+    role: 'agent' as const,
+    text: `**Counterfactual analysis — no hedge scenario (Jul 24 → Aug 9):**
+
+**Portfolio drawdown without Ontos alert:**
+- Tech longs (QQQ-weighted): **-12.4%** (NVDA -18%, AAPL -9%, MSFT -11%)
+- Short vol positions (VIX puts): **-340%** return (VIX 14 → 65)
+- JPY-funded carry trades: **-8.2%** on unwind
+- **Total portfolio impact: -9.7% NAV** in 12 trading days
+
+**With Ontos-triggered hedge (executed Jul 24):**
+- VIX call spread: **+285%** return → +2.1% portfolio
+- JPY long: **+1.8%** on Yen rally
+- Tech de-gross avoided **4.9%** of drawdown
+- **Net portfolio impact: +3.2% NAV** — a **12.9% alpha swing**
+
+**Key insight:** The .onto engine didn't predict the crash. It detected a **structural regime break** across 4 asset classes simultaneously — something no single-indicator system or RAG pipeline could identify in real-time.
+
+**31 nodes, 4 hops, 0.42ms.** That's the difference between a -9.7% drawdown and a +3.2% gain.
+
+[Full Counterfactual Report] [Share With CIO] [Add to Risk Framework]`,
+    delay: 1500,
+  },
 ];
