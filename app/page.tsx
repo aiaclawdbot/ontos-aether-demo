@@ -92,6 +92,26 @@ function renderInline(text: string) {
   });
 }
 
+// ─── Copy Button ─────────────────────────────────────────────────
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button onClick={handleCopy} title="Copy response" style={{
+      ...mono, fontSize: 9, color: copied ? T.green : T.textTer, background: 'transparent',
+      border: `1px solid ${copied ? T.green + '40' : T.border}`, borderRadius: 3,
+      padding: '2px 6px', cursor: 'pointer', transition: 'all 0.2s ease', marginTop: 6, float: 'right' as const,
+    }}>
+      {copied ? '✓ Copied' : '⎘ Copy'}
+    </button>
+  );
+}
+
 // ─── Floating Particles ──────────────────────────────────────────
 function FloatingParticles() {
   const particles = useRef(
@@ -138,14 +158,23 @@ function FloatingParticles() {
   );
 }
 
-// ─── Grid Background ─────────────────────────────────────────────
+// ─── Grid Background with Parallax ───────────────────────────────
 function GridBackground() {
+  const [scrollY, setScrollY] = useState(0);
+  useEffect(() => {
+    const handler = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handler, { passive: true });
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
+
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
       backgroundImage: `linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px)`,
       backgroundSize: '60px 60px',
+      backgroundPosition: `0 ${scrollY * -0.15}px`,
+      transition: 'background-position 0.05s linear',
     }}>
-      <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '80%', height: 400,
+      <div style={{ position: 'absolute', top: scrollY * -0.3, left: '50%', transform: 'translateX(-50%)', width: '80%', height: 400,
         background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.06) 0%, transparent 70%)',
       }} />
     </div>
@@ -263,13 +292,19 @@ function Phase1() {
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: isMobile ? 8 : '8px 0 0 8px', padding: isMobile ? 16 : 24 }}>
           <div style={{ ...mono, fontSize: 11, color: T.red, marginBottom: 16 }}>YOUR CURRENT STACK</div>
           <div style={{ ...mono, fontSize: 12, color: T.textSec, lineHeight: 2.2 }}>
-            <div>1. Join sentiment tables with FX volatility data (different schemas)</div>
-            <div>2. Align tick frequencies (sentiment=daily, FX=intraday, VIX=real-time)</div>
-            <div>3. Execute <span style={{ color: T.red, fontWeight: 700 }}>cross-asset table joins</span> across 4 data domains</div>
-            <div>4. Scan sector breadth arrays for hidden divergence</div>
-            <div>5. Compute σ-scores with rolling windows on FX vol</div>
-            <div>6. Check VIX term structure shape (custom curve logic)</div>
-            <div>7. Aggregate into alertable signal with provenance</div>
+            {[
+              <>1. Join sentiment tables with FX volatility data (different schemas)</>,
+              <>2. Align tick frequencies (sentiment=daily, FX=intraday, VIX=real-time)</>,
+              <>3. Execute <span style={{ color: T.red, fontWeight: 700 }}>cross-asset table joins</span> across 4 data domains</>,
+              <>4. Scan sector breadth arrays for hidden divergence</>,
+              <>5. Compute σ-scores with rolling windows on FX vol</>,
+              <>6. Check VIX term structure shape (custom curve logic)</>,
+              <>7. Aggregate into alertable signal with provenance</>,
+            ].map((step, i) => (
+              <motion.div key={i} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.15, duration: 0.4, ease: 'easeOut' }}>
+                {step}
+              </motion.div>
+            ))}
           </div>
           <div style={{ marginTop: 20, padding: 12, background: `${T.red}10`, borderRadius: 6 }}>
             <div style={{ ...mono, fontSize: 18, fontWeight: 700, color: T.red }}>O(N<sup>k</sup>)</div>
@@ -298,13 +333,19 @@ function Phase1() {
         <div style={{ background: T.surface, border: `1px solid ${T.accent}30`, borderRadius: isMobile ? 8 : '0 8px 8px 0', padding: isMobile ? 16 : 24 }}>
           <div style={{ ...mono, fontSize: 11, color: T.accent, marginBottom: 16 }}>ONTOS COMPILED GRAPH</div>
           <div style={{ ...mono, fontSize: 12, color: T.textSec, lineHeight: 2.2 }}>
-            <div>1. All 3,100 indicators are <span style={{ color: T.accent }}>nodes in a compiled graph</span></div>
-            <div>2. 28,400 relationships are <span style={{ color: T.accent }}>pre-computed edges</span></div>
-            <div>3. <span style={{ color: T.accent }}>One rule</span> in .onto syntax replaces the entire pipeline</div>
-            <div>4. Graph traversal evaluates all conditions simultaneously</div>
-            <div>5. Confidence computed across connected nodes</div>
-            <div>6. Provenance chain tracked automatically</div>
-            <div>7. Fires proactively on every data tick</div>
+            {[
+              <>1. All 3,100 indicators are <span style={{ color: T.accent }}>nodes in a compiled graph</span></>,
+              <>2. 28,400 relationships are <span style={{ color: T.accent }}>pre-computed edges</span></>,
+              <>3. <span style={{ color: T.accent }}>One rule</span> in .onto syntax replaces the entire pipeline</>,
+              <>4. Graph traversal evaluates all conditions simultaneously</>,
+              <>5. Confidence computed across connected nodes</>,
+              <>6. Provenance chain tracked automatically</>,
+              <>7. Fires proactively on every data tick</>,
+            ].map((step, i) => (
+              <motion.div key={i} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.15, duration: 0.4, ease: 'easeOut' }}>
+                {step}
+              </motion.div>
+            ))}
           </div>
           <div style={{ marginTop: 20, padding: 12, background: `${T.accent}10`, borderRadius: 6 }}>
             <div style={{ ...mono, fontSize: 18, fontWeight: 700, color: T.accent }}>O(V + E)</div>
@@ -638,6 +679,12 @@ function Phase3() {
     schedule();
   };
 
+  const replay = () => {
+    setPhase('ready');
+    setTick1Index(0);
+    setTick2Index(0);
+  };
+
   const startTick1 = () => {
     setPhase('tick1');
     runSequence(TICK1_OUTPUT, setTick1Index, () => setPhase('between'));
@@ -762,6 +809,11 @@ function Phase3() {
             <GraphTraversal />
           </div>
 
+          <div style={{ marginTop: 16, textAlign: 'center' }}>
+            <button onClick={replay} style={{ ...mono, fontSize: 11, color: T.textTer, background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 4, padding: '6px 16px', cursor: 'pointer', transition: 'all 0.2s ease' }}>
+              ↺ Replay Sequence
+            </button>
+          </div>
           <div style={{ marginTop: 16, background: T.surface, border: `1px solid ${T.red}30`, borderRadius: 8, padding: 20, textAlign: 'center' }}>
             <div style={{ fontSize: 15, color: T.text, lineHeight: 1.7 }}>
               On July 24th, <strong>12 days before the historic August 5th VIX spike</strong>, the .onto engine flags a 94% confidence structural break.
@@ -881,6 +933,7 @@ function Phase4() {
                   <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8 }}>
                     <RenderMarkdown text={CHAT_MESSAGES[1].text} />
                   </div>
+                  <CopyButton text={CHAT_MESSAGES[1].text} />
                 </div>
               </motion.div>
             )}
@@ -916,6 +969,7 @@ function Phase4() {
                   <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8 }}>
                     <RenderMarkdown text={CHAT_MESSAGES[3].text} />
                   </div>
+                  <CopyButton text={CHAT_MESSAGES[3].text} />
                 </div>
               </motion.div>
             )}
