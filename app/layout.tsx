@@ -2,8 +2,20 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Ontos × SentimenTrader — Indicator Intelligence Demo",
-  description: "What 3,000+ proprietary indicators become with a formal ontology runtime.",
+  title: "Ontos × SentimenTrader — Compiled Reasoning for 3,100 Indicators",
+  description: "See how Ontos' compiled ontology engine detects cross-asset regime shifts across SentimenTrader's 3,100 indicators — in 0.42ms. Interactive demo.",
+  openGraph: {
+    title: "Ontos × SentimenTrader — Compiled Reasoning Demo",
+    description: "3,100 indicators. 28,400 relationships. 847 rules. Sub-millisecond cross-asset detection. Interactive demo of the .onto engine.",
+    type: "website",
+    siteName: "Ontos",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ontos × SentimenTrader — Compiled Reasoning Demo",
+    description: "3,100 indicators. 28,400 relationships. 847 rules. Sub-millisecond cross-asset detection.",
+  },
+  metadataBase: new URL("https://ontos-aether-demo.vercel.app"),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

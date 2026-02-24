@@ -1,7 +1,38 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// ─── Responsive Hook ─────────────────────────────────────────────
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    setMatches(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, [query]);
+  return matches;
+}
+
+// ─── Animated Counter Hook ───────────────────────────────────────
+function useAnimatedCounter(target: number, duration = 1500, start = true) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!start) return;
+    let startTime: number;
+    const animate = (ts: number) => {
+      if (!startTime) startTime = ts;
+      const progress = Math.min((ts - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      setValue(Math.round(eased * target));
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [target, duration, start]);
+  return value;
+}
 
 // ─── Design Tokens ───────────────────────────────────────────────
 const T = {
@@ -250,6 +281,7 @@ const CHAT_MESSAGES = [
 const PHASE_NAMES = ['The Problem', 'The .onto Engine', 'Live Tick', 'Deterministic AI'];
 
 function Header({ phase, setPhase }: { phase: number; setPhase: (p: number) => void }) {
+  const isMobile = useMediaQuery('(max-width: 768px)');
   return (
     <div style={{ position: 'sticky', top: 0, zIndex: 50 }}>
       {/* Progress bar */}
@@ -260,27 +292,29 @@ function Header({ phase, setPhase }: { phase: number; setPhase: (p: number) => v
           transition={{ duration: 0.4, ease: 'easeInOut' }}
         />
       </div>
-      <div style={{ background: 'rgba(10,14,23,0.97)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${T.border}`, padding: '10px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ background: 'rgba(10,14,23,0.97)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${T.border}`, padding: isMobile ? '10px 16px' : '10px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: isMobile ? 8 : 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 24, height: 24, borderRadius: 5, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, color: '#fff' }}>O</div>
           <span style={{ fontWeight: 700, fontSize: 15, color: T.text }}>Ontos</span>
-          <span style={{ ...mono, fontSize: 11, color: T.textTer }}>Compiled Reasoning Engine</span>
+          {!isMobile && <span style={{ ...mono, fontSize: 11, color: T.textTer }}>Compiled Reasoning Engine</span>}
         </div>
-        <div style={{ display: 'flex', gap: 2 }}>
+        <div style={{ display: 'flex', gap: 2, order: isMobile ? 3 : 0, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
           {PHASE_NAMES.map((p, i) => (
             <button key={i} onClick={() => setPhase(i)} style={{
-              padding: '6px 14px', borderRadius: 4, border: 'none', cursor: 'pointer', ...mono, fontSize: 11,
+              padding: isMobile ? '6px 8px' : '6px 14px', borderRadius: 4, border: 'none', cursor: 'pointer', ...mono, fontSize: isMobile ? 10 : 11,
               background: phase === i ? T.accent : 'transparent',
               color: phase === i ? '#fff' : phase > i ? T.green : T.textTer,
-              transition: 'all 0.2s ease',
+              transition: 'all 0.2s ease', flex: isMobile ? 1 : 'none', textAlign: 'center',
             }}>
-              {i + 1}. {p}
+              {isMobile ? `${i + 1}` : `${i + 1}. ${p}`}
             </button>
           ))}
         </div>
-        <div style={{ ...mono, fontSize: 11, color: T.aether, border: `1px solid ${T.aether}40`, borderRadius: 4, padding: '5px 12px' }}>
-          AETHER / SENTIMENTRADER
-        </div>
+        {!isMobile && (
+          <div style={{ ...mono, fontSize: 11, color: T.aether, border: `1px solid ${T.aether}40`, borderRadius: 4, padding: '5px 12px' }}>
+            AETHER / SENTIMENTRADER
+          </div>
+        )}
       </div>
     </div>
   );
@@ -288,16 +322,35 @@ function Header({ phase, setPhase }: { phase: number; setPhase: (p: number) => v
 
 // ─── Phase 1: The Mathematical Nightmare ─────────────────────────
 function Phase1() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const indicatorCount = useAnimatedCounter(3100, 2000);
+  const relationshipCount = useAnimatedCounter(28400, 2500);
+  const ruleCount = useAnimatedCounter(847, 1800);
+
   return (
-    <div style={{ padding: '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ padding: isMobile ? '32px 16px' : '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ ...mono, fontSize: 11, color: T.accent, letterSpacing: 2, marginBottom: 12 }}>PHASE 1</div>
-      <h1 style={{ fontSize: 36, fontWeight: 700, color: T.text, margin: 0, marginBottom: 24, lineHeight: 1.2 }}>
+      <h1 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 700, color: T.text, margin: 0, marginBottom: 24, lineHeight: 1.2 }}>
         The Mathematical Nightmare
       </h1>
 
-      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: 28, marginBottom: 32 }}>
+      {/* Animated stats banner */}
+      <div style={{ display: 'flex', gap: isMobile ? 12 : 24, marginBottom: 24, justifyContent: 'center' }}>
+        {[
+          { value: indicatorCount.toLocaleString(), label: 'Indicators', color: T.accent },
+          { value: relationshipCount.toLocaleString(), label: 'Relationships', color: T.blue },
+          { value: ruleCount.toLocaleString(), label: 'Rules', color: T.amber },
+        ].map(s => (
+          <div key={s.label} style={{ textAlign: 'center' }}>
+            <div style={{ ...mono, fontSize: isMobile ? 20 : 28, fontWeight: 700, color: s.color }}>{s.value}</div>
+            <div style={{ ...mono, fontSize: 10, color: T.textTer }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: isMobile ? 16 : 28, marginBottom: 32 }}>
         <div style={{ ...mono, fontSize: 11, color: T.amber, marginBottom: 12 }}>THE QUERY</div>
-        <div style={{ fontSize: 16, color: T.text, lineHeight: 1.7 }}>
+        <div style={{ fontSize: isMobile ? 14 : 16, color: T.text, lineHeight: 1.7 }}>
           Detect a regime where Smart Money is abandoning equities while Dumb Money piles in, the Yen carry trade is unwinding, tech breadth is collapsing under the surface, <strong>AND</strong> the VIX term structure is flattening.
         </div>
         <div style={{ ...mono, fontSize: 12, color: T.textSec, marginTop: 12 }}>
@@ -308,9 +361,9 @@ function Phase1() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 1fr', gap: 0, marginBottom: 40 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 80px 1fr', gap: 0, marginBottom: 40 }}>
         {/* Current approach */}
-        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: '8px 0 0 8px', padding: 24 }}>
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: isMobile ? 8 : '8px 0 0 8px', padding: isMobile ? 16 : 24 }}>
           <div style={{ ...mono, fontSize: 11, color: T.red, marginBottom: 16 }}>YOUR CURRENT STACK</div>
           <div style={{ ...mono, fontSize: 12, color: T.textSec, lineHeight: 2.2 }}>
             <div>1. Join sentiment tables with FX volatility data (different schemas)</div>
@@ -336,7 +389,7 @@ function Phase1() {
         </div>
 
         {/* Ontos */}
-        <div style={{ background: T.surface, border: `1px solid ${T.accent}30`, borderRadius: '0 8px 8px 0', padding: 24 }}>
+        <div style={{ background: T.surface, border: `1px solid ${T.accent}30`, borderRadius: isMobile ? 8 : '0 8px 8px 0', padding: isMobile ? 16 : 24 }}>
           <div style={{ ...mono, fontSize: 11, color: T.accent, marginBottom: 16 }}>ONTOS COMPILED GRAPH</div>
           <div style={{ ...mono, fontSize: 12, color: T.textSec, lineHeight: 2.2 }}>
             <div>1. All 3,100 indicators are <span style={{ color: T.accent }}>nodes in a compiled graph</span></div>
@@ -366,6 +419,7 @@ function Phase1() {
 
 // ─── Phase 2: The .onto Engine ──────────────────────────────────
 function Phase2() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const [linesVisible, setLinesVisible] = useState(0);
   const codeLines = ONTO_FILE.split('\n');
   const codeRef = useRef<HTMLDivElement>(null);
@@ -404,9 +458,9 @@ function Phase2() {
   };
 
   return (
-    <div style={{ padding: '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ padding: isMobile ? '32px 16px' : '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ ...mono, fontSize: 11, color: T.accent, letterSpacing: 2, marginBottom: 12 }}>PHASE 2</div>
-      <h1 style={{ fontSize: 36, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8, lineHeight: 1.2 }}>
+      <h1 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8, lineHeight: 1.2 }}>
         The .onto Engine
       </h1>
       <p style={{ color: T.textSec, fontSize: 14, marginBottom: 24 }}>
@@ -447,7 +501,7 @@ function Phase2() {
       </div>
 
       {linesVisible >= codeLines.length && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 20, display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr', gap: 12 }}>
           {[
             { label: 'Indicators', value: '3,100', color: T.accent },
             { label: 'Relationships', value: '28,400', color: T.blue },
@@ -467,6 +521,7 @@ function Phase2() {
 
 // ─── Phase 3: Live Tick ─────────────────────────────────────────
 function Phase3() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const [phase, setPhase] = useState<'ready'|'tick1'|'between'|'tick2'|'done'>('ready');
   const [tick1Index, setTick1Index] = useState(0);
   const [tick2Index, setTick2Index] = useState(0);
@@ -503,12 +558,12 @@ function Phase3() {
   ];
 
   return (
-    <div style={{ padding: '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ padding: isMobile ? '32px 16px' : '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ ...mono, fontSize: 11, color: T.accent, letterSpacing: 2, marginBottom: 12 }}>PHASE 3</div>
-      <h1 style={{ fontSize: 36, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8, lineHeight: 1.2 }}>
+      <h1 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8, lineHeight: 1.2 }}>
         The Yen Carry Trade Unwind
       </h1>
-      <p style={{ color: T.textSec, fontSize: 14, marginBottom: 24 }}>
+      <p style={{ color: T.textSec, fontSize: isMobile ? 13 : 14, marginBottom: 24 }}>
         July 16, 2024: S&P 500 hits all-time high. Standard momentum models say &quot;Buy.&quot; Twelve days later, VIX explodes to 65 and tech craters. Two ticks. Watch what the .onto engine sees that your current stack doesn&apos;t.
       </p>
 
@@ -587,7 +642,7 @@ function Phase3() {
 
       {phase === 'done' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}>
+          <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr', gap: 12 }}>
             <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: 16, textAlign: 'center' }}>
               <div style={{ ...mono, fontSize: 24, fontWeight: 700, color: T.green }}>0.42ms</div>
               <div style={{ ...mono, fontSize: 10, color: T.textTer }}>Execution time</div>
@@ -622,18 +677,36 @@ function Phase3() {
 
 // ─── Phase 4: Deterministic AI ──────────────────────────────────
 function Phase4() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const [chatStep, setChatStep] = useState(0);
   const [typing, setTyping] = useState(false);
+  const [typingText, setTypingText] = useState('');
   const chatRef = useRef<HTMLDivElement>(null);
 
   const startChat = () => {
     setChatStep(1);
     setTimeout(() => {
       setTyping(true);
-      setTimeout(() => {
-        setTyping(false);
-        setChatStep(2);
-      }, 2000);
+      // Variable speed typing simulation
+      const fullText = CHAT_MESSAGES[1].text;
+      let i = 0;
+      const typeNext = () => {
+        if (i >= fullText.length) {
+          setTyping(false);
+          setChatStep(2);
+          return;
+        }
+        // Vary speed: faster for spaces/newlines, slower for start of words
+        const char = fullText[i];
+        const delay = char === '\n' ? 40 + Math.random() * 80
+          : char === ' ' ? 10 + Math.random() * 20
+          : char === '*' ? 5
+          : 8 + Math.random() * 18;
+        i++;
+        setTypingText(fullText.slice(0, i));
+        setTimeout(typeNext, delay);
+      };
+      typeNext();
     }, 800);
   };
 
@@ -642,16 +715,16 @@ function Phase4() {
   }, [chatStep, typing]);
 
   return (
-    <div style={{ padding: '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ padding: isMobile ? '32px 16px' : '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ ...mono, fontSize: 11, color: T.accent, letterSpacing: 2, marginBottom: 12 }}>PHASE 4</div>
-      <h1 style={{ fontSize: 36, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8, lineHeight: 1.2 }}>
+      <h1 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8, lineHeight: 1.2 }}>
         Deterministic AI
       </h1>
-      <p style={{ color: T.textSec, fontSize: 14, marginBottom: 24, maxWidth: 800 }}>
+      <p style={{ color: T.textSec, fontSize: isMobile ? 13 : 14, marginBottom: 24, maxWidth: 800 }}>
         Everyone wants to use LLMs to trade. LLMs hallucinate on flat data. When an AI agent is plugged into Ontos, it doesn&apos;t guess based on text vectors — it receives a deterministic, mathematically verified state of the market with full provenance.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 24, marginBottom: 32 }}>
         {/* Standard LLM */}
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: 24 }}>
           <div style={{ ...mono, fontSize: 11, color: T.red, marginBottom: 16 }}>STANDARD LLM (RAG)</div>
@@ -694,7 +767,15 @@ function Phase4() {
               </div>
             )}
 
-            {typing && (
+            {typing && typingText && (
+              <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}20`, borderRadius: '12px 12px 12px 2px', padding: '14px 16px' }}>
+                <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8, whiteSpace: 'pre-wrap', opacity: 0.8 }}>
+                  {typingText}
+                  <motion.span animate={{ opacity: [1, 0] }} transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }} style={{ color: T.accent }}>▋</motion.span>
+                </div>
+              </div>
+            )}
+            {typing && !typingText && (
               <div style={{ display: 'flex', gap: 4, padding: '10px 14px' }}>
                 {[0, 1, 2].map(i => (
                   <motion.div key={i} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
@@ -772,8 +853,9 @@ function Phase4() {
 
 // ─── Footer ──────────────────────────────────────────────────────
 function Footer({ phase, setPhase }: { phase: number; setPhase: (p: number) => void }) {
+  const isMobile = useMediaQuery('(max-width: 768px)');
   return (
-    <div style={{ borderTop: `1px solid ${T.border}`, padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 48 }}>
+    <div style={{ borderTop: `1px solid ${T.border}`, padding: isMobile ? '16px' : '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 48, flexWrap: isMobile ? 'wrap' : 'nowrap', gap: isMobile ? 12 : 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ width: 20, height: 20, borderRadius: 4, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 10, color: '#fff' }}>O</div>
         <span style={{ ...mono, fontSize: 11, color: T.textTer }}>Built with .onto — Compiled Reasoning Engine</span>
@@ -817,6 +899,11 @@ const PHASES_COMPONENTS = [Phase1, Phase2, Phase3, Phase4];
 export default function Page() {
   const [phase, setPhase] = useState(0);
   const PhaseComponent = PHASES_COMPONENTS[phase];
+
+  // Smooth scroll to top on phase change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [phase]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
