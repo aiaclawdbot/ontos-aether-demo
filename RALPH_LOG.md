@@ -14,11 +14,14 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [ ] Mobile: Bottom sheet navigation drawer instead of compressed header tabs
 - [ ] Phase 1: Add animated "How it works" flowchart below the comparison grid
 - [ ] Phase 3: Add a "timeline scrubber" to jump to any point in the tick sequence
-- [ ] Add subtle text reveal animation on phase headings (letter-by-letter or word-by-word)
-- [ ] Phase 1: Add animated "benchmark" comparison showing pipeline time vs .onto time
-- [ ] Phase 4: Add "confidence meter" that fills as agent types response
+- [ ] Add micro-interaction: phase number counter animates (flip/slide) on phase change
+- [ ] Phase 2: Add "Expand All / Collapse All" toggle for code sections
+- [ ] Phase 3: Add pulsing dot on sparkline during active tick playback
 
 ## Completed
+- [x] Add subtle text reveal animation on phase headings — word-by-word blur+slide reveal on all 4 phase titles
+- [x] Phase 1: Add animated "benchmark" comparison — pipeline time bar (4.2 min) vs .onto bar (0.42ms) with 600,000× speedup callout
+- [x] Phase 4: Add "confidence meter" that fills as agent types response — progress bar under Ontos Agent header, fills per response
 - [x] Add favicon with Ontos "O" branding — SVG favicon with purple rounded rect + white "O"
 - [x] Add subtle page-enter animation on first load — wrapper fade-in, header slide-down, footer delayed fade
 - [x] Phase 4: Typing speed slider to control agent response speed — 0.5×–3× range slider in agent panel header
@@ -69,6 +72,13 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [x] Button press ripple effect on CTA buttons (RippleButton component with CSS animation)
 
 ## Iteration History
+
+### Iteration 12 — 2026-02-24T09:51+01:00
+- Text reveal animation: word-by-word blur+slide-up reveal on all 4 phase headings using framer-motion
+- Phase 1 benchmark comparison: animated bar chart comparing Traditional Pipeline (~4.2 min, full width) vs .onto (0.42ms, hairline) with "600,000× faster" callout
+- Phase 4 confidence meter: horizontal progress bar under Ontos Agent panel header, fills as agent types each response, updates across all 3 follow-ups
+- Added 3 new backlog items (phase counter animation, expand/collapse all, sparkline pulsing dot)
+- Build: ✓ (58.5kB page JS) | Deploy: ✓ (Vercel prod)
 
 ### Iteration 11 — 2026-02-24T09:33+01:00
 - Prefers-reduced-motion: CSS media query disables all animations; JS hook hides floating particles for accessibility
