@@ -9,15 +9,20 @@ This is a Next.js 14 interactive demo showing Ontos' compiled reasoning engine a
 Live URL: Deployed on Vercel (ontos-aether-demo project).
 
 ## Backlog
-- [ ] Phase 3: Add a timeline/sparkline showing S&P 500 price with the two tick dates marked
 - [ ] Phase 3: Add sound effects toggle (optional terminal typing sounds)
-- [ ] Accessibility — aria labels, focus management, screen reader support
-- [ ] Performance — lazy load phases, reduce bundle size
-- [ ] Phase 3 done state: add a mini graph visualization showing the 4-hop traversal path
-- [ ] TypeScript strict mode — fix any type issues
+- [ ] Performance — lazy load phases, reduce bundle size (currently 54kB page JS)
 - [ ] OG image — generate or add a static og:image for social sharing
+- [ ] Phase 1: Add animated "vs" divider with pulse effect between the two columns
+- [ ] Phase 4: Add a second follow-up question in the chat (e.g. "What's the hedge ratio?")
+- [ ] Add subtle particle/floating dot animation in background (like stars)
+- [ ] Phase 2: Show compilation progress as a percentage bar below the code editor
+- [ ] Mobile: Bottom sheet navigation drawer instead of compressed header tabs
 
 ## Completed
+- [x] Phase 3: S&P 500 sparkline with Jul 16 / Jul 24 / Aug 5 markers
+- [x] Phase 3 done state: animated 4-hop graph traversal visualization (SmartMoney → JPY → McClellan → VIX)
+- [x] Accessibility: skip-to-content link, aria labels on nav/buttons/SVGs, semantic `<main>` and `<nav>` elements, aria-current on active phase
+- [x] TypeScript strict mode — already enabled, no issues
 - [x] Auto-advance option: phases auto-play like a presentation (15s per phase, toggle in header)
 - [x] Phase 2: Add collapsible sections for the .onto code (click section headers to collapse)
 - [x] Extract hardcoded data (tick output, chat messages, onto code) into separate data.ts file
@@ -41,6 +46,13 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [x] Subtle grid background animation with radial glow (non-distracting, adds depth)
 
 ## Iteration History
+
+### Iteration 5 — 2026-02-24T08:05+01:00
+- S&P 500 sparkline chart in Phase 3: SVG with price line, area fill, and marked dates (Jul 16 ATH, Jul 24 alert, Aug 5 crash)
+- Animated 4-hop graph traversal visualization in Phase 3 done state: nodes spring in sequentially with connecting arrows
+- Accessibility: skip-to-content link (visible on focus), aria-label on nav, phase buttons, SVG charts; semantic <main> and <nav> elements; aria-current="step" on active phase
+- Added 5 new backlog items for continued polish
+- Build: ✓ | Deploy: ✓ (Vercel prod)
 
 ### Iteration 4 — 2026-02-24T07:48+01:00
 - Extracted all hardcoded data (T tokens, ONTO_FILE, TICK1/2_OUTPUT, CHAT_MESSAGES, PHASE_NAMES) into app/data.ts
