@@ -13,12 +13,16 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [ ] Performance — lazy load phases, reduce bundle size (currently 55kB page JS)
 - [ ] OG image — generate or add a static og:image for social sharing
 - [ ] Mobile: Bottom sheet navigation drawer instead of compressed header tabs
-- [ ] Phase 3: Add a "replay" button to re-run the tick sequence without resetting phase
-- [ ] Add smooth scroll-linked parallax to the grid background
-- [ ] Phase 1: Animate the 7 pipeline steps appearing one by one (staggered reveal)
-- [ ] Phase 4: Add a "copy response" button on agent messages
+- [ ] Add a "Book a Demo" floating CTA that appears after Phase 2
+- [ ] Phase 2: Add a minimap/scrollbar indicator for the code editor
+- [ ] Add subtle hover effects on stat cards (scale + glow)
+- [ ] Phase 1: Add animated connection lines between the 3 stat counters
 
 ## Completed
+- [x] Phase 1: Staggered reveal of pipeline steps (slide-in with 150ms stagger)
+- [x] Phase 3: Replay button to re-run tick sequence without resetting phase
+- [x] Phase 4: Copy response button on agent messages (clipboard + feedback)
+- [x] Smooth scroll-linked parallax on grid background (0.15x grid, 0.3x glow)
 - [x] Phase 1: Animated "vs" divider with pulse effect and connecting lines between columns
 - [x] Phase 4: Second follow-up question ("What's the hedge ratio?") with full typed response
 - [x] Phase 2: Compilation progress percentage bar below code editor header
@@ -50,6 +54,14 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [x] Subtle grid background animation with radial glow (non-distracting, adds depth)
 
 ## Iteration History
+
+### Iteration 7 — 2026-02-24T08:33+01:00
+- Phase 1: Staggered reveal animation — pipeline steps slide in one by one (left for "current stack", right for "Ontos"), 150ms stagger
+- Phase 3: Replay button — "↺ Replay Sequence" resets tick state without leaving the phase
+- Phase 4: Copy response button on both agent message bubbles — clipboard copy with ✓ feedback
+- Grid background: Scroll-linked parallax — grid lines shift at 0.15x scroll speed, radial glow at 0.3x for depth
+- Added 4 new backlog items (floating CTA, code minimap, hover effects, stat connection lines)
+- Build: ✓ (55.5kB page JS) | Deploy: ✓ (Vercel prod)
 
 ### Iteration 6 — 2026-02-24T08:18+01:00
 - Phase 1: Animated "vs" divider — pulsing circle with red border + vertical connecting lines on desktop
