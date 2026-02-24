@@ -18,6 +18,31 @@ function useMediaQuery(query: string) {
   return matches;
 }
 
+// ─── Reduced Motion Hook ─────────────────────────────────────────
+function usePrefersReducedMotion() {
+  return useMediaQuery('(prefers-reduced-motion: reduce)');
+}
+
+// ─── Ripple Button ───────────────────────────────────────────────
+function RippleButton({ children, onClick, style, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { children: React.ReactNode }) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const btn = btnRef.current;
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const ripple = document.createElement('span');
+      const size = Math.max(rect.width, rect.height) * 2;
+      ripple.style.cssText = `position:absolute;border-radius:50%;background:rgba(255,255,255,0.3);width:${size}px;height:${size}px;left:${x - size / 2}px;top:${y - size / 2}px;transform:scale(0);animation:ripple-anim 0.5s ease-out forwards;pointer-events:none;`;
+      btn.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 600);
+    }
+    onClick?.(e);
+  };
+  return <button ref={btnRef} onClick={handleClick} style={{ ...style, position: 'relative', overflow: 'hidden' }} {...props}>{children}</button>;
+}
+
 // ─── Swipe Hook ──────────────────────────────────────────────────
 function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void) {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -224,7 +249,7 @@ function CopyButton({ text }: { text: string }) {
 }
 
 // ─── Floating Particles ──────────────────────────────────────────
-function FloatingParticles() {
+function FloatingParticles({ reducedMotion = false }: { reducedMotion?: boolean }) {
   const particles = useRef(
     Array.from({ length: 20 }, (_, i) => ({
       id: i,
@@ -236,6 +261,8 @@ function FloatingParticles() {
       opacity: 0.15 + Math.random() * 0.25,
     }))
   ).current;
+
+  if (reducedMotion) return null;
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
@@ -648,7 +675,9 @@ function Phase2() {
             const section = getSectionAtLine(i);
             const isCollapsed = section && collapsed[section.name];
             return (
-              <div key={i} style={{ display: 'flex', padding: '0 16px', lineHeight: 1.65, cursor: section ? 'pointer' : 'default' }}
+              <div key={i} style={{ display: 'flex', padding: '0 16px', lineHeight: 1.65, cursor: section ? 'pointer' : 'default', transition: 'background 0.1s ease' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = `${T.accent}08`; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                 onClick={section ? () => setCollapsed(c => ({ ...c, [section.name]: !c[section.name] })) : undefined}>
                 <span style={{ ...mono, fontSize: 12, color: T.textTer, width: 36, textAlign: 'right', marginRight: 16, userSelect: 'none', flexShrink: 0 }}>{i + 1}</span>
                 {section && (
@@ -886,12 +915,12 @@ function Phase3() {
               <div style={{ ...mono, fontSize: 11, color: T.textTer, marginBottom: 20 }}>
                 Standard momentum model: &quot;Strong buy.&quot; Let&apos;s see what the .onto engine says.
               </div>
-              <button onClick={startTick1} style={{
+              <RippleButton onClick={startTick1} style={{
                 ...mono, fontSize: 14, padding: '14px 40px', background: T.accent, color: '#fff',
                 border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
               }}>
                 ▶ Push Tick 1 — July 16
-              </button>
+              </RippleButton>
             </div>
           ) : (
             <>
@@ -911,13 +940,13 @@ function Phase3() {
                   <div style={{ ...mono, fontSize: 12, color: T.amber, marginBottom: 16 }}>
                     Now push July 24 — 8 days later. Tech earnings. BOJ rate hike rumors. The Yen starts moving.
                   </div>
-                  <button onClick={startTick2} style={{
+                  <RippleButton onClick={startTick2} style={{
                     ...mono, fontSize: 14, padding: '14px 40px', background: T.red, color: '#fff',
                     border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
                     boxShadow: `0 0 20px ${T.red}40`,
                   }}>
                     ▶ Push Tick 2 — July 24
-                  </button>
+                  </RippleButton>
                 </div>
               )}
             </>
@@ -1057,9 +1086,9 @@ function Phase4() {
           <div ref={chatRef} style={{ padding: 16, minHeight: 320, maxHeight: 400, overflowY: 'auto' }}>
             {chatStep === 0 && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 280 }}>
-                <button onClick={startChat} style={{ ...mono, fontSize: 12, padding: '12px 28px', background: T.accent, color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+                <RippleButton onClick={startChat} style={{ ...mono, fontSize: 12, padding: '12px 28px', background: T.accent, color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
                   Ask: &quot;Why did we hedge?&quot;
-                </button>
+                </RippleButton>
               </div>
             )}
             {chatStep >= 1 && (
@@ -1238,6 +1267,7 @@ export default function Page() {
   const [phase, setPhase] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [autoAdvance, setAutoAdvance] = useState(false);
+  const reducedMotion = usePrefersReducedMotion();
   const PhaseComponent = PHASES_COMPONENTS[phase];
 
   useEffect(() => {
@@ -1298,7 +1328,7 @@ export default function Page() {
         Skip to content
       </a>
       <GridBackground />
-      <FloatingParticles />
+      <FloatingParticles reducedMotion={reducedMotion} />
       <FloatingCTA visible={phase >= 2} />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
