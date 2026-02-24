@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { T, mono, PHASE_NAMES, ONTO_FILE, TICK1_OUTPUT, TICK2_OUTPUT, CHAT_MESSAGES } from './data';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -136,9 +136,9 @@ function Header({ phase, setPhase, autoAdvance, setAutoAdvance }: { phase: numbe
           <span style={{ fontWeight: 700, fontSize: 15, color: T.text }}>Ontos</span>
           {!isMobile && <span style={{ ...mono, fontSize: 11, color: T.textTer }}>Compiled Reasoning Engine</span>}
         </div>
-        <div style={{ display: 'flex', gap: 2, order: isMobile ? 3 : 0, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
+        <nav role="navigation" aria-label="Demo phases" style={{ display: 'flex', gap: 2, order: isMobile ? 3 : 0, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
           {PHASE_NAMES.map((p, i) => (
-            <button key={i} onClick={() => setPhase(i)} style={{
+            <button key={i} onClick={() => setPhase(i)} aria-label={`Phase ${i + 1}: ${p}`} aria-current={phase === i ? 'step' : undefined} style={{
               padding: isMobile ? '6px 8px' : '6px 14px', borderRadius: 4, border: 'none', cursor: 'pointer', ...mono, fontSize: isMobile ? 10 : 11,
               background: phase === i ? T.accent : 'transparent',
               color: phase === i ? '#fff' : phase > i ? T.green : T.textTer,
@@ -147,7 +147,7 @@ function Header({ phase, setPhase, autoAdvance, setAutoAdvance }: { phase: numbe
               {isMobile ? `${i + 1}` : `${i + 1}. ${p}`}
             </button>
           ))}
-        </div>
+        </nav>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {/* Auto-advance toggle */}
           <button
@@ -443,6 +443,107 @@ function Phase2() {
   );
 }
 
+// ─── S&P 500 Sparkline ──────────────────────────────────────────
+const SP500_DATA = [
+  // Approximate S&P 500 daily close, Jul 1 – Aug 9, 2024
+  { date: 'Jul 1', price: 5475 }, { date: 'Jul 3', price: 5510 }, { date: 'Jul 5', price: 5530 },
+  { date: 'Jul 8', price: 5545 }, { date: 'Jul 10', price: 5570 }, { date: 'Jul 12', price: 5600 },
+  { date: 'Jul 15', price: 5630 }, { date: 'Jul 16', price: 5667 }, { date: 'Jul 18', price: 5590 },
+  { date: 'Jul 22', price: 5555 }, { date: 'Jul 24', price: 5522 }, { date: 'Jul 26', price: 5460 },
+  { date: 'Jul 29', price: 5430 }, { date: 'Jul 31', price: 5390 }, { date: 'Aug 1', price: 5350 },
+  { date: 'Aug 2', price: 5280 }, { date: 'Aug 5', price: 5186 },
+];
+const TICK1_IDX = 7; // Jul 16
+const TICK2_IDX = 10; // Jul 24
+
+function SparklineChart() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const w = isMobile ? 320 : 500;
+  const h = 120;
+  const pad = { top: 16, right: 12, bottom: 24, left: 40 };
+  const innerW = w - pad.left - pad.right;
+  const innerH = h - pad.top - pad.bottom;
+  const minP = Math.min(...SP500_DATA.map(d => d.price));
+  const maxP = Math.max(...SP500_DATA.map(d => d.price));
+  const x = (i: number) => pad.left + (i / (SP500_DATA.length - 1)) * innerW;
+  const y = (p: number) => pad.top + innerH - ((p - minP) / (maxP - minP)) * innerH;
+  const path = SP500_DATA.map((d, i) => `${i === 0 ? 'M' : 'L'}${x(i)},${y(d.price)}`).join(' ');
+
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img" aria-label="S&P 500 price chart from July to August 2024 showing decline after July 16 all-time high">
+      {/* Y axis labels */}
+      {[minP, maxP].map(p => (
+        <text key={p} x={pad.left - 4} y={y(p) + 4} textAnchor="end" style={{ ...mono, fontSize: 8, fill: T.textTer }}>{p.toLocaleString()}</text>
+      ))}
+      {/* Price line */}
+      <path d={path} fill="none" stroke={T.accent} strokeWidth={1.5} />
+      {/* Area fill */}
+      <path d={`${path} L${x(SP500_DATA.length - 1)},${h - pad.bottom} L${x(0)},${h - pad.bottom} Z`} fill={`${T.accent}10`} />
+      {/* Tick 1 marker */}
+      <line x1={x(TICK1_IDX)} y1={pad.top} x2={x(TICK1_IDX)} y2={h - pad.bottom} stroke={T.green} strokeWidth={1} strokeDasharray="3,3" />
+      <circle cx={x(TICK1_IDX)} cy={y(SP500_DATA[TICK1_IDX].price)} r={4} fill={T.green} />
+      <text x={x(TICK1_IDX)} y={h - 6} textAnchor="middle" style={{ ...mono, fontSize: 7, fill: T.green }}>Jul 16</text>
+      {/* Tick 2 marker */}
+      <line x1={x(TICK2_IDX)} y1={pad.top} x2={x(TICK2_IDX)} y2={h - pad.bottom} stroke={T.red} strokeWidth={1} strokeDasharray="3,3" />
+      <circle cx={x(TICK2_IDX)} cy={y(SP500_DATA[TICK2_IDX].price)} r={4} fill={T.red} />
+      <text x={x(TICK2_IDX)} y={h - 6} textAnchor="middle" style={{ ...mono, fontSize: 7, fill: T.red }}>Jul 24</text>
+      {/* Aug 5 crash marker */}
+      <circle cx={x(SP500_DATA.length - 1)} cy={y(SP500_DATA[SP500_DATA.length - 1].price)} r={3} fill={T.red} stroke={T.red} strokeWidth={1} />
+      <text x={x(SP500_DATA.length - 1)} y={h - 6} textAnchor="middle" style={{ ...mono, fontSize: 7, fill: T.red }}>Aug 5</text>
+    </svg>
+  );
+}
+
+// ─── 4-Hop Graph Visualization ──────────────────────────────────
+function GraphTraversal() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const nodes = [
+    { id: 'sm', label: 'Smart Money', x: 0, color: T.accent },
+    { id: 'jpy', label: 'JPY Vol', x: 1, color: T.amber },
+    { id: 'mcc', label: 'McClellan', x: 2, color: T.blue },
+    { id: 'vix', label: 'VIX Term', x: 3, color: T.red },
+  ];
+  const w = isMobile ? 300 : 440;
+  const h = 80;
+  const nodeR = 18;
+  const spacing = (w - nodeR * 2) / 3;
+  const cx = (i: number) => nodeR + i * spacing;
+  const cy = h / 2;
+
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img" aria-label="4-hop graph traversal: Smart Money to JPY Vol to McClellan to VIX Term Structure">
+      {/* Edges with animated dash */}
+      {nodes.slice(0, -1).map((n, i) => (
+        <motion.line key={n.id} x1={cx(i) + nodeR} y1={cy} x2={cx(i + 1) - nodeR} y2={cy}
+          stroke={T.accent} strokeWidth={2}
+          initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+          transition={{ duration: 0.5, delay: i * 0.4 + 0.2 }}
+        />
+      ))}
+      {/* Arrow heads */}
+      {nodes.slice(0, -1).map((_, i) => (
+        <motion.polygon key={`arr-${i}`}
+          points={`${cx(i + 1) - nodeR - 2},${cy - 4} ${cx(i + 1) - nodeR + 4},${cy} ${cx(i + 1) - nodeR - 2},${cy + 4}`}
+          fill={T.accent} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          transition={{ delay: i * 0.4 + 0.6 }}
+        />
+      ))}
+      {/* Nodes */}
+      {nodes.map((n, i) => (
+        <motion.g key={n.id} initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: i * 0.4, type: 'spring', stiffness: 200 }}>
+          <circle cx={cx(i)} cy={cy} r={nodeR} fill={`${n.color}20`} stroke={n.color} strokeWidth={1.5} />
+          <text x={cx(i)} y={cy + 3} textAnchor="middle" style={{ ...mono, fontSize: 7, fill: n.color, fontWeight: 600 }}>
+            {n.label.split(' ')[0]}
+          </text>
+          <text x={cx(i)} y={cy + nodeR + 12} textAnchor="middle" style={{ ...mono, fontSize: 6, fill: T.textTer }}>
+            {n.label}
+          </text>
+        </motion.g>
+      ))}
+    </svg>
+  );
+}
+
 // ─── Phase 3: Live Tick ─────────────────────────────────────────
 function Phase3() {
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -487,9 +588,19 @@ function Phase3() {
       <h1 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8, lineHeight: 1.2 }}>
         The Yen Carry Trade Unwind
       </h1>
-      <p style={{ color: T.textSec, fontSize: isMobile ? 13 : 14, marginBottom: 24 }}>
+      <p style={{ color: T.textSec, fontSize: isMobile ? 13 : 14, marginBottom: 16 }}>
         July 16, 2024: S&P 500 hits all-time high. Standard momentum models say &quot;Buy.&quot; Twelve days later, VIX explodes to 65 and tech craters. Two ticks. Watch what the .onto engine sees that your current stack doesn&apos;t.
       </p>
+
+      {/* S&P 500 Sparkline */}
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '12px 16px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+        <div style={{ ...mono, fontSize: 10, color: T.textTer, marginBottom: 4 }}>S&P 500 — JUL–AUG 2024</div>
+        <SparklineChart />
+        <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+          <span style={{ ...mono, fontSize: 9, color: T.green }}>● Tick 1 (ATH 5,667)</span>
+          <span style={{ ...mono, fontSize: 9, color: T.red }}>● Tick 2 (Alert fires)</span>
+        </div>
+      </div>
 
       <div style={{ background: '#010409', border: `1px solid ${T.border}`, borderRadius: 8, overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 16px', borderBottom: `1px solid ${T.border}`, background: T.elevated }}>
@@ -569,6 +680,12 @@ function Phase3() {
               </div>
             ))}
           </div>
+          {/* 4-Hop Graph Traversal */}
+          <div style={{ marginTop: 16, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+            <div style={{ ...mono, fontSize: 10, color: T.accent, marginBottom: 8 }}>GRAPH TRAVERSAL — 4 HOPS, 31 CONNECTED NODES</div>
+            <GraphTraversal />
+          </div>
+
           <div style={{ marginTop: 16, background: T.surface, border: `1px solid ${T.red}30`, borderRadius: 8, padding: 20, textAlign: 'center' }}>
             <div style={{ fontSize: 15, color: T.text, lineHeight: 1.7 }}>
               On July 24th, <strong>12 days before the historic August 5th VIX spike</strong>, the .onto engine flags a 94% confidence structural break.
@@ -797,9 +914,16 @@ export default function Page() {
   return (
     <div style={{ background: T.bg, minHeight: '100vh', color: T.text, fontFamily: "'Inter', sans-serif", position: 'relative' }}
       {...swipeHandlers}>
+      {/* Skip to content link for accessibility */}
+      <a href="#main-content" style={{ position: 'absolute', left: -9999, top: 'auto', width: 1, height: 1, overflow: 'hidden', zIndex: 100 }}
+        onFocus={(e) => { e.currentTarget.style.left = '16px'; e.currentTarget.style.top = '16px'; e.currentTarget.style.width = 'auto'; e.currentTarget.style.height = 'auto'; e.currentTarget.style.overflow = 'visible'; }}
+        onBlur={(e) => { e.currentTarget.style.left = '-9999px'; e.currentTarget.style.width = '1px'; e.currentTarget.style.height = '1px'; e.currentTarget.style.overflow = 'hidden'; }}>
+        Skip to content
+      </a>
       <GridBackground />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <Header phase={phase} setPhase={setPhase} autoAdvance={autoAdvance} setAutoAdvance={setAutoAdvance} />
+        <main id="main-content" role="main" aria-label={`Phase ${phase + 1}: ${PHASE_NAMES[phase]}`}>
         <AnimatePresence mode="wait">
           <motion.div key={phase} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.3, ease: 'easeOut' }}>
             <ErrorBoundary phaseName={PHASE_NAMES[phase]}>
@@ -807,6 +931,7 @@ export default function Page() {
             </ErrorBoundary>
           </motion.div>
         </AnimatePresence>
+        </main>
         <Footer phase={phase} setPhase={setPhase} />
       </div>
     </div>
