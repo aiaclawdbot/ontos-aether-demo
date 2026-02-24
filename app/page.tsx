@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { T, mono, PHASE_NAMES, ONTO_FILE, TICK1_OUTPUT, TICK2_OUTPUT, CHAT_MESSAGES } from './data';
+import { ErrorBoundary } from './ErrorBoundary';
 
 // ─── Responsive Hook ─────────────────────────────────────────────
 function useMediaQuery(query: string) {
@@ -16,6 +18,28 @@ function useMediaQuery(query: string) {
   return matches;
 }
 
+// ─── Swipe Hook ──────────────────────────────────────────────────
+function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void) {
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, []);
+
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStart.current) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) onSwipeLeft();
+      else onSwipeRight();
+    }
+    touchStart.current = null;
+  }, [onSwipeLeft, onSwipeRight]);
+
+  return { onTouchStart, onTouchEnd };
+}
+
 // ─── Animated Counter Hook ───────────────────────────────────────
 function useAnimatedCounter(target: number, duration = 1500, start = true) {
   const [value, setValue] = useState(0);
@@ -25,7 +49,7 @@ function useAnimatedCounter(target: number, duration = 1500, start = true) {
     const animate = (ts: number) => {
       if (!startTime) startTime = ts;
       const progress = Math.min((ts - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
       setValue(Math.round(eased * target));
       if (progress < 1) requestAnimationFrame(animate);
     };
@@ -40,7 +64,6 @@ function RenderMarkdown({ text }: { text: string }) {
   return (
     <>
       {lines.map((line, i) => {
-        // Links row: [View X] [View Y]
         if (line.startsWith('[')) {
           return (
             <div key={i} style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -52,17 +75,9 @@ function RenderMarkdown({ text }: { text: string }) {
             </div>
           );
         }
-        // Numbered list items
-        if (/^\d+\.\s/.test(line)) {
-          return <div key={i} style={{ paddingLeft: 8, marginTop: 4 }}>{renderInline(line)}</div>;
-        }
-        // Bullet items
-        if (line.startsWith('- ')) {
-          return <div key={i} style={{ paddingLeft: 12, marginTop: 2 }}>{renderInline('• ' + line.slice(2))}</div>;
-        }
-        // Empty line = spacer
+        if (/^\d+\.\s/.test(line)) return <div key={i} style={{ paddingLeft: 8, marginTop: 4 }}>{renderInline(line)}</div>;
+        if (line.startsWith('- ')) return <div key={i} style={{ paddingLeft: 12, marginTop: 2 }}>{renderInline('• ' + line.slice(2))}</div>;
         if (!line.trim()) return <div key={i} style={{ height: 6 }} />;
-        // Regular line with inline formatting
         return <div key={i} style={{ marginTop: 2 }}>{renderInline(line)}</div>;
       })}
     </>
@@ -70,31 +85,21 @@ function RenderMarkdown({ text }: { text: string }) {
 }
 
 function renderInline(text: string) {
-  // Split by **bold** markers
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i}>{part.slice(2, -2)}</strong>;
-    }
+    if (part.startsWith('**') && part.endsWith('**')) return <strong key={i}>{part.slice(2, -2)}</strong>;
     return <span key={i}>{part}</span>;
   });
 }
 
-// ─── Subtle Grid Background ─────────────────────────────────────
+// ─── Grid Background ─────────────────────────────────────────────
 function GridBackground() {
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-      backgroundImage: `
-        linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px)
-      `,
+    <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+      backgroundImage: `linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px)`,
       backgroundSize: '60px 60px',
     }}>
-      {/* Radial glow at top */}
-      <div style={{
-        position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-        width: '80%', height: 400,
+      <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '80%', height: 400,
         background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.06) 0%, transparent 70%)',
       }} />
     </div>
@@ -105,11 +110,7 @@ function GridBackground() {
 function LoadingSkeleton() {
   return (
     <div style={{ minHeight: '100vh', background: '#0A0E17', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <motion.div
-        animate={{ opacity: [0.3, 1, 0.3] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
-        style={{ textAlign: 'center' }}
-      >
+      <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} style={{ textAlign: 'center' }}>
         <div style={{ width: 40, height: 40, borderRadius: 8, background: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 18, color: '#fff', margin: '0 auto 12px' }}>O</div>
         <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#484F58' }}>Loading compiled graph...</div>
       </motion.div>
@@ -117,257 +118,11 @@ function LoadingSkeleton() {
   );
 }
 
-// ─── Design Tokens ───────────────────────────────────────────────
-const T = {
-  bg: '#0A0E17', surface: '#0D1117', elevated: '#161B22', border: '#21262D',
-  text: '#E6EDF3', textSec: '#8B949E', textTer: '#484F58',
-  accent: '#6366F1', aether: '#7C3AED',
-  green: '#3FB950', red: '#F85149', amber: '#D29922', blue: '#58A6FF', cyan: '#39D2C0',
-};
-
-const mono: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
-
-// ─── .onto Source Code ───────────────────────────────────────────
-const ONTO_FILE = `// ═══════════════════════════════════════════════════════════════
-// domain: macro_risk_intelligence.onto
-// Compiled Reasoning Engine — SentimenTrader × Ontos
-// 3,100 indicators | 28,400 relationships | 847 rules
-// ═══════════════════════════════════════════════════════════════
-
-@metadata {
-  name: "sentimentrader-macro-risk"
-  version: "4.2.1"
-  compiled_indicators: 3100
-  relationships: 28400
-  inference_rules: 847
-}
-
-class Indicator {
-  extends: "foundation:Signal"
-  properties {
-    name            : String     @indexed
-    category        : Enum(Sentiment, Breadth, Momentum,
-                      Volatility, Flow, Options, Credit,
-                      Bonds, Commodities, Currencies, Sectors)
-    signal_type     : Enum(Contrarian, Confirming, Leading, Lagging)
-    reading         : Float
-    percentile      : Float      @min(0) @max(100)
-    reliability     : Map<Regime, Float>   // regime-conditional
-    decay_rate      : Float
-  }
-}
-
-class Sector {
-  extends: "foundation:Entity"
-  properties {
-    name            : String
-    beta            : Float
-    breadth_indicators : List<Reference<Indicator>>
-    mcclellan_oscillator : Float
-  }
-}
-
-class CurrencyPair {
-  extends: "foundation:Entity"
-  properties {
-    pair            : String     // e.g. "JPY/USD"
-    spot            : Float
-    volatility_index : TimeSeries<Float>
-  }
-}
-
-class MarketRegime {
-  extends: "foundation:State"
-  properties {
-    status          : Enum(live, closed, halted)
-    sentiment       : SentimentState
-    sectors         : List<Reference<Sector>>
-    currencies      : Map<String, Reference<CurrencyPair>>
-    volatility      : VolatilityState
-  }
-}
-
-@relationships {
-  relationship confirms {
-    from: Indicator → to: Indicator
-    strength: Float
-    regime_strength: Map<Regime, Float>
-  }
-  relationship contradicts {
-    from: Indicator → to: Indicator
-    strength: Float
-    resolution: Enum(HigherReliability, RegimeDependent)
-  }
-  relationship leads {
-    from: Indicator → to: Indicator
-    avg_lead_days: Integer
-    confidence_at_lag: List<Float>
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// rule: carry_trade_unwind_detection
-// Cross-asset: Currencies × Sentiment × Breadth × Volatility
-// ═══════════════════════════════════════════════════════════════
-
-rule systemic_carry_unwind {
-
-  match market: MarketRegime
-  where market.status == "live"
-
-    // 1. The SentimenTrader Core Setup (The Spread)
-    //    Smart Money exiting while Dumb Money piles in
-    and market.sentiment.smart_money_confidence < 30
-    and market.sentiment.dumb_money_confidence > 80
-
-    // 2. The Cross-Asset Trigger (Currency Volatility)
-    //    Yen strengthening = carry trade unwinding
-    and market.currencies.jpy_usd
-      .volatility_index(lookback: 10d) > 1.5_sigma
-
-    // 3. The Under-the-Hood Breadth Collapse
-    //    Tech looks fine on the surface. McClellan says otherwise.
-    and market.sectors.tech.mcclellan_oscillator < -40
-
-    // 4. The Options Warning
-    //    VIX term structure flattening = smart vol traders hedging
-    and market.volatility.vix_term_structure == "flattening"
-
-  then {
-    flag: "severe_cross_asset_unwind",
-    severity: "critical",
-    confidence: calculate_graph_confidence(market.provenance),
-    action: alert("quant_risk_desk", {
-      regime_shift: "carry_trade_liquidation",
-      implied_drawdown_risk: "high",
-      suggested_action:
-        "de-gross_tech_exposure_and_buy_vix_calls"
-    })
-  }
-}`;
-
-// ─── Terminal Output Lines ───────────────────────────────────────
-// Two ticks: July 16 (no fire) and July 24 (fire)
-const TICK1_OUTPUT = [
-  { text: '$ ontos feed --source sentimentrader --tick 2024-07-16T15:59:00Z', color: T.text, delay: 0 },
-  { text: '', color: T.textTer, delay: 100 },
-  { text: '[ontos-rt] Loading compiled graph: macro_risk_intelligence.onto', color: T.textTer, delay: 200 },
-  { text: '[ontos-rt] Graph loaded: 3,100 nodes, 28,400 edges, 847 rules', color: T.textTer, delay: 400 },
-  { text: '[ontos-rt] Feeding tick: 2024-07-16 (S&P 500 all-time high: 5,667)', color: T.textTer, delay: 600 },
-  { text: '', color: T.textTer, delay: 700 },
-  { text: '[tick] Smart Money Confidence: 34% (↓ from 41%)', color: T.amber, delay: 800 },
-  { text: '[tick] Dumb Money Confidence: 76% (↑ from 71%)', color: T.amber, delay: 950 },
-  { text: '[tick] JPY/USD 10d volatility: 0.9σ', color: T.textSec, delay: 1100 },
-  { text: '[tick] XLK McClellan Oscillator: +12', color: T.textSec, delay: 1250 },
-  { text: '[tick] VIX Term Structure: contango (normal)', color: T.textSec, delay: 1400 },
-  { text: '', color: T.textTer, delay: 1500 },
-  { text: '[eval] Rule: systemic_carry_unwind', color: T.accent, delay: 1600 },
-  { text: '[eval]   smart_money = 34%              →  < 30 ✗  (not yet)', color: T.red, delay: 1800 },
-  { text: '[eval]   Rule NOT fired. Monitoring.', color: T.textTer, delay: 2000 },
-  { text: '[ontos-rt] Tick processed in 0.31ms. No alerts.', color: T.textTer, delay: 2200 },
-];
-
-const TICK2_OUTPUT = [
-  { text: '', color: T.textTer, delay: 0 },
-  { text: '─── 8 days later ───', color: T.textTer, delay: 200 },
-  { text: '', color: T.textTer, delay: 300 },
-  { text: '$ ontos feed --source sentimentrader --tick 2024-07-24T14:02:00Z', color: T.text, delay: 400 },
-  { text: '[ontos-rt] Feeding tick: 2024-07-24', color: T.textTer, delay: 600 },
-  { text: '', color: T.textTer, delay: 700 },
-  { text: '[tick] Smart Money Confidence: 28% (↓↓ from 34%)', color: T.amber, delay: 800 },
-  { text: '[tick] Dumb Money Confidence: 84% (↑↑ from 76%)', color: T.amber, delay: 950 },
-  { text: '[tick] JPY/USD 10d volatility: 1.8σ (SPIKE — BOJ rate hike speculation)', color: T.red, delay: 1100 },
-  { text: '[tick] XLK McClellan Oscillator: -45 (COLLAPSE from +12)', color: T.red, delay: 1300 },
-  { text: '[tick] VIX Term Structure: FLATTENING (front month catching back)', color: T.red, delay: 1500 },
-  { text: '', color: T.textTer, delay: 1600 },
-  { text: '[eval] Rule: systemic_carry_unwind', color: T.accent, delay: 1700 },
-  { text: '[eval]   smart_money = 28%              →  < 30 ✓', color: T.green, delay: 1900 },
-  { text: '[eval]   dumb_money = 84%               →  > 80 ✓', color: T.green, delay: 2100 },
-  { text: '[eval]   jpy_vol = 1.8σ                 →  > 1.5σ ✓', color: T.green, delay: 2300 },
-  { text: '[eval]   xlk_mcclellan = -45            →  < -40 ✓', color: T.green, delay: 2500 },
-  { text: '[eval]   vix_term = flattening          →  == flattening ✓', color: T.green, delay: 2700 },
-  { text: '', color: T.textTer, delay: 2800 },
-  { text: '[eval]   ALL CONDITIONS MET. Computing graph confidence...', color: T.accent, delay: 2900 },
-  { text: '[eval]   Traversing: SmartMoney → JPY_Vol → McClellan → VIX (4 hops, 31 nodes)', color: T.accent, delay: 3100 },
-  { text: '[eval]   Cross-asset correlation: Sentiment × Currency × Breadth × Volatility', color: T.accent, delay: 3300 },
-  { text: '', color: T.textTer, delay: 3400 },
-  { text: '🔥 RULE FIRED: systemic_carry_unwind', color: T.red, delay: 3500 },
-  { text: '', color: T.textTer, delay: 3600 },
-  { text: '{', color: T.text, delay: 3700 },
-  { text: '  "timestamp": "2024-07-24T14:02:01Z",', color: T.textSec, delay: 3750 },
-  { text: '  "execution_time_ms": 0.42,', color: T.green, delay: 3800 },
-  { text: '  "alert": "severe_cross_asset_unwind",', color: T.red, delay: 3850 },
-  { text: '  "severity": "critical",', color: T.red, delay: 3900 },
-  { text: '  "confidence": 0.94,', color: T.green, delay: 3950 },
-  { text: '  "regime_shift": "carry_trade_liquidation",', color: T.amber, delay: 4000 },
-  { text: '  "trigger_nodes": [', color: T.text, delay: 4050 },
-  { text: '    "SentimenTrader_SmartMoney_28%",', color: T.cyan, delay: 4100 },
-  { text: '    "SentimenTrader_DumbMoney_84%",', color: T.cyan, delay: 4150 },
-  { text: '    "FX_JPY_Vol_Spike_1.8σ",', color: T.cyan, delay: 4200 },
-  { text: '    "SentimenTrader_XLK_McClellan_-45",', color: T.cyan, delay: 4250 },
-  { text: '    "VIX_TermStructure_Flattening"', color: T.cyan, delay: 4300 },
-  { text: '  ],', color: T.text, delay: 4350 },
-  { text: '  "provenance": {', color: T.text, delay: 4400 },
-  { text: '    "sentiment": { "source": "SentimenTrader", "reliability": 0.93 },', color: T.cyan, delay: 4450 },
-  { text: '    "currency": { "source": "SentimenTrader + BOJ", "reliability": 0.89 },', color: T.cyan, delay: 4500 },
-  { text: '    "breadth": { "source": "SentimenTrader", "reliability": 0.87 },', color: T.cyan, delay: 4550 },
-  { text: '    "volatility": { "source": "CBOE", "reliability": 0.91 }', color: T.cyan, delay: 4600 },
-  { text: '  },', color: T.text, delay: 4650 },
-  { text: '  "suggested_action": "de-gross_tech_exposure_and_buy_vix_calls",', color: T.accent, delay: 4700 },
-  { text: '  "implied_drawdown_risk": "high"', color: T.red, delay: 4750 },
-  { text: '}', color: T.text, delay: 4800 },
-  { text: '', color: T.textTer, delay: 4900 },
-  { text: '[ontos-rt] Execution time: 0.42ms', color: T.green, delay: 5000 },
-  { text: '[ontos-rt] Alert dispatched to: quant_risk_desk, portfolio_mgr', color: T.green, delay: 5100 },
-  { text: '[ontos-rt] AI agent context updated with deterministic state', color: T.green, delay: 5200 },
-];
-
-// ─── AI Chat Messages ────────────────────────────────────────────
-const CHAT_MESSAGES = [
-  {
-    role: 'user' as const,
-    text: 'Why did we just de-gross the tech portfolio and buy VIX calls?',
-    delay: 0,
-  },
-  {
-    role: 'agent' as const,
-    text: `A severe cross-asset carry trade unwind was detected at 14:02 UTC on July 24. Confidence: **0.94**.
-
-**4 simultaneous trigger conditions (cross-asset):**
-
-1. SentimenTrader Smart Money Confidence: **28%** (threshold: <30%)
-   Smart Money exiting while Dumb Money at **84%** (threshold: >80%)
-   → Source: SentimenTrader Daily, reliability 0.93
-
-2. JPY/USD 10-day volatility spiked to **1.8σ** (threshold: >1.5σ)
-   BOJ rate hike speculation driving Yen carry trade unwinding
-   → Source: SentimenTrader + BOJ, reliability 0.89
-
-3. XLK McClellan Oscillator collapsed to **-45** (threshold: <-40)
-   Tech breadth deteriorating under the surface despite index near highs
-   → Source: SentimenTrader, reliability 0.87
-
-4. VIX term structure **flattening** — front month catching back months
-   Smart volatility traders already hedging
-   → Source: CBOE, reliability 0.91
-
-**Graph traversal:** SmartMoney → JPY_Vol → McClellan → VIX (4 hops, 31 connected nodes). Cross-asset correlation across Sentiment × Currency × Breadth × Volatility.
-
-**What happened next:** On August 5th — 12 days later — VIX exploded to 65. S&P 500 dropped 8.5% in 3 sessions. The Yen strengthened 12% against USD. This alert fired with 0.94 confidence and 0.42ms execution time.
-
-[View Graph Traversal Path] [View Provenance Chain] [View Full Event Timeline]`,
-    delay: 1500,
-  },
-];
-
-// ─── Phase Component ─────────────────────────────────────────────
-const PHASE_NAMES = ['The Problem', 'The .onto Engine', 'Live Tick', 'Deterministic AI'];
-
-function Header({ phase, setPhase }: { phase: number; setPhase: (p: number) => void }) {
+// ─── Header ──────────────────────────────────────────────────────
+function Header({ phase, setPhase, autoAdvance, setAutoAdvance }: { phase: number; setPhase: (p: number) => void; autoAdvance: boolean; setAutoAdvance: (v: boolean) => void }) {
   const isMobile = useMediaQuery('(max-width: 768px)');
   return (
     <div style={{ position: 'sticky', top: 0, zIndex: 50 }}>
-      {/* Progress bar */}
       <div style={{ height: 3, background: T.border }}>
         <motion.div
           style={{ height: '100%', background: `linear-gradient(90deg, ${T.accent}, ${T.aether})`, borderRadius: '0 2px 2px 0' }}
@@ -393,11 +148,26 @@ function Header({ phase, setPhase }: { phase: number; setPhase: (p: number) => v
             </button>
           ))}
         </div>
-        {!isMobile && (
-          <div style={{ ...mono, fontSize: 11, color: T.aether, border: `1px solid ${T.aether}40`, borderRadius: 4, padding: '5px 12px' }}>
-            AETHER / SENTIMENTRADER
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Auto-advance toggle */}
+          <button
+            onClick={() => setAutoAdvance(!autoAdvance)}
+            title={autoAdvance ? 'Auto-advance ON' : 'Auto-advance OFF'}
+            style={{
+              ...mono, fontSize: 10, color: autoAdvance ? T.green : T.textTer,
+              background: autoAdvance ? `${T.green}15` : 'transparent',
+              border: `1px solid ${autoAdvance ? T.green + '40' : T.border}`,
+              borderRadius: 4, padding: '4px 8px', cursor: 'pointer', transition: 'all 0.2s ease',
+            }}
+          >
+            {autoAdvance ? '▶ AUTO' : '⏸ AUTO'}
+          </button>
+          {!isMobile && (
+            <div style={{ ...mono, fontSize: 11, color: T.aether, border: `1px solid ${T.aether}40`, borderRadius: 4, padding: '5px 12px' }}>
+              AETHER / SENTIMENTRADER
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -417,7 +187,6 @@ function Phase1() {
         The Mathematical Nightmare
       </h1>
 
-      {/* Animated stats banner */}
       <div style={{ display: 'flex', gap: isMobile ? 12 : 24, marginBottom: 24, justifyContent: 'center' }}>
         {[
           { value: indicatorCount.toLocaleString(), label: 'Indicators', color: T.accent },
@@ -445,7 +214,6 @@ function Phase1() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 80px 1fr', gap: 0, marginBottom: 40 }}>
-        {/* Current approach */}
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: isMobile ? 8 : '8px 0 0 8px', padding: isMobile ? 16 : 24 }}>
           <div style={{ ...mono, fontSize: 11, color: T.red, marginBottom: 16 }}>YOUR CURRENT STACK</div>
           <div style={{ ...mono, fontSize: 12, color: T.textSec, lineHeight: 2.2 }}>
@@ -465,13 +233,9 @@ function Phase1() {
             </div>
           </div>
         </div>
-
-        {/* vs */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ ...mono, fontSize: 14, color: T.textTer }}>vs.</div>
         </div>
-
-        {/* Ontos */}
         <div style={{ background: T.surface, border: `1px solid ${T.accent}30`, borderRadius: isMobile ? 8 : '0 8px 8px 0', padding: isMobile ? 16 : 24 }}>
           <div style={{ ...mono, fontSize: 11, color: T.accent, marginBottom: 16 }}>ONTOS COMPILED GRAPH</div>
           <div style={{ ...mono, fontSize: 12, color: T.textSec, lineHeight: 2.2 }}>
@@ -504,6 +268,7 @@ function Phase1() {
 function Phase2() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [linesVisible, setLinesVisible] = useState(0);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const codeLines = ONTO_FILE.split('\n');
   const codeRef = useRef<HTMLDivElement>(null);
 
@@ -521,29 +286,57 @@ function Phase2() {
     if (codeRef.current) codeRef.current.scrollTop = codeRef.current.scrollHeight;
   }, [linesVisible]);
 
+  // Identify collapsible sections
+  const sections = (() => {
+    const result: { name: string; keyword: string; startLine: number; endLine: number }[] = [];
+    let braceDepth = 0;
+    let currentSection: { name: string; keyword: string; startLine: number } | null = null;
+    codeLines.forEach((line, i) => {
+      const trimmed = line.trim();
+      if (!currentSection && /^(class|rule|@relationships|@metadata)\b/.test(trimmed)) {
+        const keyword = trimmed.split(/[\s{]/)[0];
+        const name = trimmed.replace(/\s*\{.*/, '');
+        currentSection = { name, keyword, startLine: i };
+        braceDepth = 0;
+      }
+      if (currentSection) {
+        braceDepth += (line.match(/\{/g) || []).length;
+        braceDepth -= (line.match(/\}/g) || []).length;
+        if (braceDepth <= 0 && i > currentSection.startLine) {
+          result.push({ ...currentSection, endLine: i });
+          currentSection = null;
+        }
+      }
+    });
+    return result;
+  })();
+
+  const isLineHidden = (lineIdx: number) => {
+    for (const sec of sections) {
+      if (collapsed[sec.name] && lineIdx > sec.startLine && lineIdx <= sec.endLine) return true;
+    }
+    return false;
+  };
+
+  const getSectionAtLine = (lineIdx: number) => sections.find(s => s.startLine === lineIdx);
+
   const colorizeLine = (line: string): React.ReactNode => {
     const trimmed = line.trim();
-    // Comments — dim italic
     if (trimmed.startsWith('//')) return <span style={{ color: T.textTer, fontStyle: 'italic' }}>{line}</span>;
-    // Decorators
     if (trimmed.startsWith('@')) return <span style={{ color: T.accent, fontWeight: 600 }}>{line}</span>;
-    // Keywords: rule, class, relationship, extends
     if (/^\s*(rule|class|relationship)\s/.test(line)) {
-      return highlightTokens(line, { keywords: [trimmed.split(/\s/)[0]], nameColor: T.text });
+      const keyword = trimmed.split(/\s/)[0];
+      return highlightTokens(line, keyword);
     }
-    // Control flow: match, where, and, then
     if (/^\s*(match|where|then|and)\s/.test(line)) {
-      return highlightTokens(line, { keywords: [trimmed.split(/\s/)[0]] });
+      const keyword = trimmed.split(/\s/)[0];
+      return highlightTokens(line, keyword);
     }
-    // Lines with string literals
-    if (line.includes('"')) return highlightStringsAndTypes(line);
-    // Lines with types
-    if (/\b(String|Float|Integer|List|Map|Enum|Boolean|TimeSeries|Reference)\b/.test(line)) return highlightStringsAndTypes(line);
+    if (line.includes('"') || /\b(String|Float|Integer|List|Map|Enum|Boolean|TimeSeries|Reference)\b/.test(line)) return highlightStringsAndTypes(line);
     return <span style={{ color: T.textSec }}>{line}</span>;
   };
 
-  const highlightTokens = (line: string, opts: { keywords: string[]; nameColor?: string }): React.ReactNode => {
-    const keyword = opts.keywords[0];
+  const highlightTokens = (line: string, keyword: string): React.ReactNode => {
     const idx = line.indexOf(keyword);
     const before = line.slice(0, idx);
     const after = line.slice(idx + keyword.length);
@@ -553,7 +346,7 @@ function Phase2() {
       return (
         <span style={{ color: T.textSec }}>
           {before}<span style={{ color: T.aether, fontWeight: 600 }}>{keyword}</span>
-          {after.slice(0, nameStart)}<span style={{ color: opts.nameColor || T.cyan, fontWeight: 600 }}>{nameMatch[1]}</span>
+          {after.slice(0, nameStart)}<span style={{ color: T.cyan, fontWeight: 600 }}>{nameMatch[1]}</span>
           {highlightStringsAndTypes(after.slice(nameStart + nameMatch[1].length))}
         </span>
       );
@@ -562,19 +355,14 @@ function Phase2() {
   };
 
   const highlightStringsAndTypes = (text: string): React.ReactNode => {
-    // Split on strings and type keywords
     const parts = text.split(/("(?:[^"\\]|\\.)*")/g);
     return (
       <span style={{ color: T.textSec }}>
         {parts.map((part, i) => {
           if (part.startsWith('"')) return <span key={i} style={{ color: T.green }}>{part}</span>;
-          // Highlight type keywords within non-string parts
           const typeParts = part.split(/\b(String|Float|Integer|List|Map|Enum|Boolean|TimeSeries|Reference)\b/g);
           return typeParts.map((tp, j) => {
-            if (/^(String|Float|Integer|List|Map|Enum|Boolean|TimeSeries|Reference)$/.test(tp)) {
-              return <span key={`${i}-${j}`} style={{ color: T.amber }}>{tp}</span>;
-            }
-            // Highlight numbers
+            if (/^(String|Float|Integer|List|Map|Enum|Boolean|TimeSeries|Reference)$/.test(tp)) return <span key={`${i}-${j}`} style={{ color: T.amber }}>{tp}</span>;
             const numParts = tp.split(/\b(\d+[\d._]*\w*)\b/g);
             return numParts.map((np, k) => {
               if (/^\d/.test(np)) return <span key={`${i}-${j}-${k}`} style={{ color: T.blue }}>{np}</span>;
@@ -586,12 +374,6 @@ function Phase2() {
     );
   };
 
-  // Highlight the contagion rule section
-  const isRuleLine = (i: number) => {
-    const ruleStart = codeLines.findIndex(l => l.includes('rule hidden_liquidity_drain'));
-    return ruleStart >= 0 && i >= ruleStart && i < codeLines.length;
-  };
-
   return (
     <div style={{ padding: isMobile ? '32px 16px' : '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ ...mono, fontSize: 11, color: T.accent, letterSpacing: 2, marginBottom: 12 }}>PHASE 2</div>
@@ -599,11 +381,10 @@ function Phase2() {
         The .onto Engine
       </h1>
       <p style={{ color: T.textSec, fontSize: 14, marginBottom: 24 }}>
-        No SQL. No Python glue. One compiled specification that models your entire indicator universe — entities, relationships, and forward-reasoning rules.
+        No SQL. No Python glue. One compiled specification that models your entire indicator universe — entities, relationships, and forward-reasoning rules. Click section headers to collapse.
       </p>
 
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, overflow: 'hidden' }}>
-        {/* Title bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 16px', borderBottom: `1px solid ${T.border}`, background: T.elevated }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ display: 'flex', gap: 6 }}>
@@ -621,17 +402,25 @@ function Phase2() {
           </div>
         </div>
 
-        {/* Code */}
         <div ref={codeRef} style={{ maxHeight: 580, overflowY: 'auto', padding: '12px 0' }}>
-          {codeLines.slice(0, linesVisible).map((line, i) => (
-            <div key={i} style={{
-              display: 'flex', padding: '0 16px', lineHeight: 1.65,
-              background: isRuleLine(i) ? `${T.accent}06` : 'transparent',
-            }}>
-              <span style={{ ...mono, fontSize: 12, color: T.textTer, width: 36, textAlign: 'right', marginRight: 16, userSelect: 'none', flexShrink: 0 }}>{i + 1}</span>
-              <span style={{ ...mono, fontSize: 12, whiteSpace: 'pre' }}>{colorizeLine(line)}</span>
-            </div>
-          ))}
+          {codeLines.slice(0, linesVisible).map((line, i) => {
+            if (isLineHidden(i)) return null;
+            const section = getSectionAtLine(i);
+            const isCollapsed = section && collapsed[section.name];
+            return (
+              <div key={i} style={{ display: 'flex', padding: '0 16px', lineHeight: 1.65, cursor: section ? 'pointer' : 'default' }}
+                onClick={section ? () => setCollapsed(c => ({ ...c, [section.name]: !c[section.name] })) : undefined}>
+                <span style={{ ...mono, fontSize: 12, color: T.textTer, width: 36, textAlign: 'right', marginRight: 16, userSelect: 'none', flexShrink: 0 }}>{i + 1}</span>
+                {section && (
+                  <span style={{ ...mono, fontSize: 10, color: T.textTer, marginRight: 4, userSelect: 'none', width: 12, flexShrink: 0 }}>
+                    {isCollapsed ? '▶' : '▼'}
+                  </span>
+                )}
+                <span style={{ ...mono, fontSize: 12, whiteSpace: 'pre', marginLeft: section ? 0 : 12 }}>{colorizeLine(line)}</span>
+                {isCollapsed && <span style={{ ...mono, fontSize: 10, color: T.textTer, marginLeft: 8 }}>…{section.endLine - section.startLine} lines</span>}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -702,7 +491,6 @@ function Phase3() {
         July 16, 2024: S&P 500 hits all-time high. Standard momentum models say &quot;Buy.&quot; Twelve days later, VIX explodes to 65 and tech craters. Two ticks. Watch what the .onto engine sees that your current stack doesn&apos;t.
       </p>
 
-      {/* Terminal */}
       <div style={{ background: '#010409', border: `1px solid ${T.border}`, borderRadius: 8, overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 16px', borderBottom: `1px solid ${T.border}`, background: T.elevated }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -713,11 +501,7 @@ function Phase3() {
             </div>
             <span style={{ ...mono, fontSize: 12, color: T.textSec, marginLeft: 8 }}>terminal — ontos-runtime</span>
           </div>
-          <span style={{ ...mono, fontSize: 10, color: 
-            phase === 'done' ? T.green : 
-            phase === 'between' ? T.amber :
-            phase !== 'ready' ? T.amber : T.textTer
-          }}>
+          <span style={{ ...mono, fontSize: 10, color: phase === 'done' ? T.green : phase === 'between' ? T.amber : phase !== 'ready' ? T.amber : T.textTer }}>
             {phase === 'done' ? '🔥 ALERT — 0.42ms' : phase === 'between' ? '○ tick 1 clean — waiting' : phase !== 'ready' ? '● processing...' : '○ ready'}
           </span>
         </div>
@@ -745,13 +529,8 @@ function Phase3() {
                   {line.text || '\u00A0'}
                 </div>
               ))}
-              {/* Blinking cursor */}
               {(phase === 'tick1' || phase === 'tick2') && (
-                <motion.span
-                  animate={{ opacity: [1, 0] }}
-                  transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
-                  style={{ ...mono, fontSize: 12, color: T.green }}
-                >▋</motion.span>
+                <motion.span animate={{ opacity: [1, 0] }} transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }} style={{ ...mono, fontSize: 12, color: T.green }}>▋</motion.span>
               )}
               {phase === 'between' && (
                 <div style={{ textAlign: 'center', marginTop: 24 }}>
@@ -778,22 +557,17 @@ function Phase3() {
       {phase === 'done' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr', gap: 12 }}>
-            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: 16, textAlign: 'center' }}>
-              <div style={{ ...mono, fontSize: 24, fontWeight: 700, color: T.green }}>0.42ms</div>
-              <div style={{ ...mono, fontSize: 10, color: T.textTer }}>Execution time</div>
-            </div>
-            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: 16, textAlign: 'center' }}>
-              <div style={{ ...mono, fontSize: 24, fontWeight: 700, color: T.accent }}>0.94</div>
-              <div style={{ ...mono, fontSize: 10, color: T.textTer }}>Confidence</div>
-            </div>
-            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: 16, textAlign: 'center' }}>
-              <div style={{ ...mono, fontSize: 24, fontWeight: 700, color: T.red }}>12 days</div>
-              <div style={{ ...mono, fontSize: 10, color: T.textTer }}>Before VIX hit 65</div>
-            </div>
-            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: 16, textAlign: 'center' }}>
-              <div style={{ ...mono, fontSize: 24, fontWeight: 700, color: T.amber }}>4 assets</div>
-              <div style={{ ...mono, fontSize: 10, color: T.textTer }}>Cross-domain detection</div>
-            </div>
+            {[
+              { value: '0.42ms', label: 'Execution time', color: T.green },
+              { value: '0.94', label: 'Confidence', color: T.accent },
+              { value: '12 days', label: 'Before VIX hit 65', color: T.red },
+              { value: '4 assets', label: 'Cross-domain detection', color: T.amber },
+            ].map(s => (
+              <div key={s.label} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: 16, textAlign: 'center' }}>
+                <div style={{ ...mono, fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
+                <div style={{ ...mono, fontSize: 10, color: T.textTer }}>{s.label}</div>
+              </div>
+            ))}
           </div>
           <div style={{ marginTop: 16, background: T.surface, border: `1px solid ${T.red}30`, borderRadius: 8, padding: 20, textAlign: 'center' }}>
             <div style={{ fontSize: 15, color: T.text, lineHeight: 1.7 }}>
@@ -822,21 +596,12 @@ function Phase4() {
     setChatStep(1);
     setTimeout(() => {
       setTyping(true);
-      // Variable speed typing simulation
       const fullText = CHAT_MESSAGES[1].text;
       let i = 0;
       const typeNext = () => {
-        if (i >= fullText.length) {
-          setTyping(false);
-          setChatStep(2);
-          return;
-        }
-        // Vary speed: faster for spaces/newlines, slower for start of words
+        if (i >= fullText.length) { setTyping(false); setChatStep(2); return; }
         const char = fullText[i];
-        const delay = char === '\n' ? 40 + Math.random() * 80
-          : char === ' ' ? 10 + Math.random() * 20
-          : char === '*' ? 5
-          : 8 + Math.random() * 18;
+        const delay = char === '\n' ? 40 + Math.random() * 80 : char === ' ' ? 10 + Math.random() * 20 : char === '*' ? 5 : 8 + Math.random() * 18;
         i++;
         setTypingText(fullText.slice(0, i));
         setTimeout(typeNext, delay);
@@ -847,7 +612,7 @@ function Phase4() {
 
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }, [chatStep, typing]);
+  }, [chatStep, typingText]);
 
   return (
     <div style={{ padding: isMobile ? '32px 16px' : '48px 64px', maxWidth: 1100, margin: '0 auto' }}>
@@ -860,12 +625,9 @@ function Phase4() {
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 24, marginBottom: 32 }}>
-        {/* Standard LLM */}
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: 24 }}>
           <div style={{ ...mono, fontSize: 11, color: T.red, marginBottom: 16 }}>STANDARD LLM (RAG)</div>
-          <div style={{ ...mono, fontSize: 12, color: T.textSec, marginBottom: 12 }}>
-            &gt; &quot;Why did we just hedge the tech portfolio?&quot;
-          </div>
+          <div style={{ ...mono, fontSize: 12, color: T.textSec, marginBottom: 12 }}>&gt; &quot;Why did we just hedge the tech portfolio?&quot;</div>
           <div style={{ fontSize: 13, color: T.textSec, lineHeight: 1.7, fontStyle: 'italic', borderLeft: `2px solid ${T.red}30`, paddingLeft: 12 }}>
             &quot;Based on the available data, there are some concerning signs in the market. The Smart Money/Dumb Money spread has widened, and there has been increased volatility in the Japanese Yen. Some tech breadth indicators are showing weakness. Given these factors, it may be prudent to reduce tech exposure, though past performance is not indicative of future results. This should not be considered financial advice.&quot;
           </div>
@@ -876,7 +638,6 @@ function Phase4() {
           </div>
         </div>
 
-        {/* Ontos Agent */}
         <div style={{ background: T.surface, border: `1px solid ${T.accent}30`, borderRadius: 8, overflow: 'hidden' }}>
           <div style={{ padding: '10px 16px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ ...mono, fontSize: 11, color: T.accent }}>ONTOS AGENT</div>
@@ -885,15 +646,11 @@ function Phase4() {
           <div ref={chatRef} style={{ padding: 16, minHeight: 320, maxHeight: 400, overflowY: 'auto' }}>
             {chatStep === 0 && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 280 }}>
-                <button onClick={startChat} style={{
-                  ...mono, fontSize: 12, padding: '12px 28px', background: T.accent, color: '#fff',
-                  border: 'none', borderRadius: 6, cursor: 'pointer',
-                }}>
+                <button onClick={startChat} style={{ ...mono, fontSize: 12, padding: '12px 28px', background: T.accent, color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
                   Ask: &quot;Why did we hedge?&quot;
                 </button>
               </div>
             )}
-
             {chatStep >= 1 && (
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
                 <div style={{ background: T.elevated, borderRadius: '12px 12px 2px 12px', padding: '10px 14px', maxWidth: '80%' }}>
@@ -901,7 +658,6 @@ function Phase4() {
                 </div>
               </div>
             )}
-
             {typing && typingText && (
               <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}20`, borderRadius: '12px 12px 12px 2px', padding: '14px 16px' }}>
                 <div style={{ fontSize: 13, color: T.text, lineHeight: 1.8, whiteSpace: 'pre-wrap', opacity: 0.8 }}>
@@ -918,7 +674,6 @@ function Phase4() {
                 ))}
               </div>
             )}
-
             {chatStep >= 2 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}20`, borderRadius: '12px 12px 12px 2px', padding: '14px 16px' }}>
@@ -932,28 +687,17 @@ function Phase4() {
         </div>
       </div>
 
-      {/* Closing */}
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: 32, textAlign: 'center' }}>
         <div style={{ fontSize: 18, color: T.text, lineHeight: 1.6, maxWidth: 700, margin: '0 auto' }}>
           SentimenTrader gives you the raw signals.<br />
           <span style={{ color: T.accent, fontWeight: 700 }}>The .onto runtime</span> is the only technology that allows your AI agents to read, reason over, and execute on those 3,100 signals — <span style={{ color: T.green }}>deterministically, in milliseconds, without hallucinating.</span>
         </div>
-
         <div style={{ marginTop: 32 }}>
-          <a
-            href="https://cal.com/michael-walker-pamuoj/ontos"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-block', padding: '14px 40px', background: T.accent, color: '#fff',
-              textDecoration: 'none', borderRadius: 6, fontWeight: 700, fontSize: 15,
-            }}
-          >
+          <a href="https://cal.com/michael-walker-pamuoj/ontos" target="_blank" rel="noopener noreferrer"
+            style={{ display: 'inline-block', padding: '14px 40px', background: T.accent, color: '#fff', textDecoration: 'none', borderRadius: 6, fontWeight: 700, fontSize: 15 }}>
             See your indicators compiled → 48h, no cost
           </a>
-          <div style={{ ...mono, fontSize: 11, color: T.textTer, marginTop: 10 }}>
-            cal.com/michael-walker-pamuoj/ontos
-          </div>
+          <div style={{ ...mono, fontSize: 11, color: T.textTer, marginTop: 10 }}>cal.com/michael-walker-pamuoj/ontos</div>
         </div>
       </div>
     </div>
@@ -982,19 +726,14 @@ function Footer({ phase, setPhase }: { phase: number; setPhase: (p: number) => v
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ ...mono, fontSize: 10, color: T.textTer }}>← → to navigate</span>
-        {/* Phase dots */}
+        <span style={{ ...mono, fontSize: 10, color: T.textTer }}>← → or swipe</span>
         <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
           {PHASE_NAMES.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setPhase(i)}
-              style={{
-                width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer', padding: 0,
-                background: phase === i ? T.accent : phase > i ? T.green : T.textTer,
-                transition: 'all 0.2s ease',
-              }}
-            />
+            <button key={i} onClick={() => setPhase(i)} style={{
+              width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer', padding: 0,
+              background: phase === i ? T.accent : phase > i ? T.green : T.textTer,
+              transition: 'all 0.2s ease',
+            }} />
           ))}
         </div>
       </div>
@@ -1008,6 +747,7 @@ const PHASES_COMPONENTS = [Phase1, Phase2, Phase3, Phase4];
 export default function Page() {
   const [phase, setPhase] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [autoAdvance, setAutoAdvance] = useState(false);
   const PhaseComponent = PHASES_COMPONENTS[phase];
 
   useEffect(() => {
@@ -1015,22 +755,30 @@ export default function Page() {
     return () => clearTimeout(t);
   }, []);
 
-  // Smooth scroll to top on phase change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [phase]);
 
+  // Auto-advance: move to next phase every 15 seconds
+  useEffect(() => {
+    if (!autoAdvance) return;
+    const interval = setInterval(() => {
+      setPhase(p => {
+        if (p >= PHASE_NAMES.length - 1) {
+          setAutoAdvance(false);
+          return p;
+        }
+        return p + 1;
+      });
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [autoAdvance]);
+
   // Keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      setPhase(p => Math.min(p + 1, PHASE_NAMES.length - 1));
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      setPhase(p => Math.max(p - 1, 0));
-    } else if (e.key >= '1' && e.key <= '4') {
-      setPhase(parseInt(e.key) - 1);
-    }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); setPhase(p => Math.min(p + 1, PHASE_NAMES.length - 1)); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); setPhase(p => Math.max(p - 1, 0)); }
+    else if (e.key >= '1' && e.key <= '4') setPhase(parseInt(e.key) - 1);
   }, []);
 
   useEffect(() => {
@@ -1038,16 +786,25 @@ export default function Page() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
+  // Swipe gestures
+  const swipeHandlers = useSwipe(
+    useCallback(() => setPhase(p => Math.min(p + 1, PHASE_NAMES.length - 1)), []),
+    useCallback(() => setPhase(p => Math.max(p - 1, 0)), []),
+  );
+
   if (!loaded) return <LoadingSkeleton />;
 
   return (
-    <div style={{ background: T.bg, minHeight: '100vh', color: T.text, fontFamily: "'Inter', sans-serif", position: 'relative' }}>
+    <div style={{ background: T.bg, minHeight: '100vh', color: T.text, fontFamily: "'Inter', sans-serif", position: 'relative' }}
+      {...swipeHandlers}>
       <GridBackground />
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <Header phase={phase} setPhase={setPhase} />
+        <Header phase={phase} setPhase={setPhase} autoAdvance={autoAdvance} setAutoAdvance={setAutoAdvance} />
         <AnimatePresence mode="wait">
           <motion.div key={phase} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.3, ease: 'easeOut' }}>
-            <PhaseComponent />
+            <ErrorBoundary phaseName={PHASE_NAMES[phase]}>
+              <PhaseComponent />
+            </ErrorBoundary>
           </motion.div>
         </AnimatePresence>
         <Footer phase={phase} setPhase={setPhase} />
