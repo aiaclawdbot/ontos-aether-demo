@@ -9,25 +9,22 @@ This is a Next.js 14 interactive demo showing Ontos' compiled reasoning engine a
 Live URL: Deployed on Vercel (ontos-aether-demo project).
 
 ## Backlog
-- [ ] Responsive design — currently hardcoded px values, breaks on mobile/tablet
 - [ ] Auto-advance option: phases auto-play like a presentation
-- [ ] Phase 1: Add animated counter for "3,100 indicators" stat
 - [ ] Phase 2: Syntax highlighting improvements — keywords, strings, comments should be more distinct
 - [ ] Phase 2: Add collapsible sections for the .onto code (classes vs rules)
 - [ ] Phase 3: Add a timeline/sparkline showing S&P 500 price with the two tick dates marked
 - [ ] Phase 3: Add sound effects toggle (optional terminal typing sounds)
 - [ ] Phase 4: Chat response should render markdown properly (bold, bullets, numbered lists)
-- [ ] Phase 4: Add typing indicator that feels more natural (variable speed)
 - [ ] Loading state / skeleton for initial page load
 - [ ] Add subtle particle/grid background animation (very subtle, not distracting)
-- [ ] Meta tags — og:image, title, description for sharing
 - [ ] Accessibility — aria labels, focus management, screen reader support
 - [ ] Performance — lazy load phases, reduce bundle size
 - [ ] Phase 3 done state: add a mini graph visualization showing the 4-hop traversal path
 - [ ] Extract hardcoded data (tick output, chat messages, onto code) into separate files
 - [ ] TypeScript strict mode — fix any type issues
 - [ ] Add error boundary around each phase
-- [ ] Smooth scroll behavior when switching phases
+- [ ] Add touch/swipe gesture support for mobile phase navigation
+- [ ] OG image — generate or add a static og:image for social sharing
 
 ## Completed
 - [x] Add a progress bar at top showing which phase you're on
@@ -37,8 +34,22 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [x] Footer with Ontos branding + "Built with .onto" badge
 - [x] Phase navigation dots (mobile-friendly alternative to text tabs) — added to footer
 - [x] Add page transitions that feel more cinematic (slide + fade) — improved exit/enter animations
+- [x] Responsive design — mobile/tablet breakpoints, fluid padding, stacked grids on small screens
+- [x] Phase 1: Animated counter for 3,100 / 28,400 / 847 stats (ease-out cubic)
+- [x] Meta tags — og:title, og:description, twitter card metadata
+- [x] Phase 4: Variable-speed typing with streaming text + cursor (replaces dots)
+- [x] Smooth scroll to top when switching phases
 
 ## Iteration History
+
+### Iteration 2 — 2026-02-24T07:18+01:00
+- Responsive design: useMediaQuery hook, mobile breakpoints for all 4 phases + header + footer
+- Animated counters in Phase 1: 3,100 indicators / 28,400 relationships / 847 rules count up on load
+- Meta tags: OpenGraph + Twitter card metadata in layout.tsx
+- Phase 4 typing: variable-speed character-by-character streaming with blinking cursor (replaces dot indicator)
+- Smooth scroll to top on phase transitions
+- Added 2 new backlog items: swipe gestures, OG image
+- Build: ✓ | Deploy: ✓ (Vercel prod)
 
 ### Iteration 1 — 2026-02-24T07:03+01:00
 - Added animated progress bar at top (gradient accent→aether, smooth transitions)
