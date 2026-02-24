@@ -370,6 +370,26 @@ function LoadingSkeleton() {
   );
 }
 
+// ─── Animated Phase Counter ──────────────────────────────────────
+function AnimatedPhaseNumber({ number }: { number: number }) {
+  return (
+    <div style={{ display: 'inline-flex', overflow: 'hidden', height: '1.2em', verticalAlign: 'middle' }}>
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={number}
+          initial={{ y: 12, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -12, opacity: 0 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+          style={{ display: 'inline-block' }}
+        >
+          {number}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ─── Header ──────────────────────────────────────────────────────
 function Header({ phase, setPhase, autoAdvance, setAutoAdvance }: { phase: number; setPhase: (p: number) => void; autoAdvance: boolean; setAutoAdvance: (v: boolean) => void }) {
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -396,7 +416,7 @@ function Header({ phase, setPhase, autoAdvance, setAutoAdvance }: { phase: numbe
               color: phase === i ? '#fff' : phase > i ? T.green : T.textTer,
               transition: 'all 0.2s ease', flex: isMobile ? 1 : 'none', textAlign: 'center',
             }}>
-              {isMobile ? `${i + 1}` : `${i + 1}. ${p}`}
+              {isMobile ? <AnimatedPhaseNumber number={i + 1} /> : <><AnimatedPhaseNumber number={i + 1} />. {p}</>}
             </button>
           ))}
         </nav>
@@ -711,6 +731,17 @@ function Phase2() {
       <p style={{ color: T.textSec, fontSize: 14, marginBottom: 24 }}>
         No SQL. No Python glue. One compiled specification that models your entire indicator universe — entities, relationships, and forward-reasoning rules. Click section headers to collapse.
       </p>
+      {/* Expand All / Collapse All */}
+      {linesVisible >= codeLines.length && sections.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, justifyContent: 'flex-end' }}>
+          <button onClick={() => { const allCollapsed: Record<string, boolean> = {}; sections.forEach(s => allCollapsed[s.name] = true); setCollapsed(allCollapsed); }} style={{ ...mono, fontSize: 10, color: T.textTer, background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 4, padding: '4px 10px', cursor: 'pointer', transition: 'all 0.2s ease' }}>
+            ▶ Collapse All
+          </button>
+          <button onClick={() => setCollapsed({})} style={{ ...mono, fontSize: 10, color: T.textTer, background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 4, padding: '4px 10px', cursor: 'pointer', transition: 'all 0.2s ease' }}>
+            ▼ Expand All
+          </button>
+        </div>
+      )}
 
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 16px', borderBottom: `1px solid ${T.border}`, background: T.elevated }}>
@@ -818,7 +849,7 @@ const SP500_DATA = [
 const TICK1_IDX = 7; // Jul 16
 const TICK2_IDX = 10; // Jul 24
 
-function SparklineChart() {
+function SparklineChart({ activeTick }: { activeTick?: 1 | 2 | null }) {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const w = isMobile ? 320 : 500;
   const h = 120;
@@ -852,6 +883,19 @@ function SparklineChart() {
       {/* Aug 5 crash marker */}
       <circle cx={x(SP500_DATA.length - 1)} cy={y(SP500_DATA[SP500_DATA.length - 1].price)} r={3} fill={T.red} stroke={T.red} strokeWidth={1} />
       <text x={x(SP500_DATA.length - 1)} y={h - 6} textAnchor="middle" style={{ ...mono, fontSize: 7, fill: T.red }}>Aug 5</text>
+      {/* Pulsing dot on active tick */}
+      {activeTick === 1 && (
+        <>
+          <motion.circle cx={x(TICK1_IDX)} cy={y(SP500_DATA[TICK1_IDX].price)} r={8} fill={`${T.green}30`} animate={{ r: [6, 12, 6], opacity: [0.6, 0.2, 0.6] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }} />
+          <circle cx={x(TICK1_IDX)} cy={y(SP500_DATA[TICK1_IDX].price)} r={4} fill={T.green} />
+        </>
+      )}
+      {activeTick === 2 && (
+        <>
+          <motion.circle cx={x(TICK2_IDX)} cy={y(SP500_DATA[TICK2_IDX].price)} r={8} fill={`${T.red}30`} animate={{ r: [6, 12, 6], opacity: [0.6, 0.2, 0.6] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }} />
+          <circle cx={x(TICK2_IDX)} cy={y(SP500_DATA[TICK2_IDX].price)} r={4} fill={T.red} />
+        </>
+      )}
     </svg>
   );
 }
@@ -963,7 +1007,7 @@ function Phase3() {
       {/* S&P 500 Sparkline */}
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '12px 16px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
         <div style={{ ...mono, fontSize: 10, color: T.textTer, marginBottom: 4 }}>S&P 500 — JUL–AUG 2024</div>
-        <SparklineChart />
+        <SparklineChart activeTick={phase === 'tick1' ? 1 : phase === 'tick2' ? 2 : null} />
         <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
           <span style={{ ...mono, fontSize: 9, color: T.green }}>● Tick 1 (ATH 5,667)</span>
           <span style={{ ...mono, fontSize: 9, color: T.red }}>● Tick 2 (Alert fires)</span>

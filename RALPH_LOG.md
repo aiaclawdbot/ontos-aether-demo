@@ -14,9 +14,12 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [ ] Mobile: Bottom sheet navigation drawer instead of compressed header tabs
 - [ ] Phase 1: Add animated "How it works" flowchart below the comparison grid
 - [ ] Phase 3: Add a "timeline scrubber" to jump to any point in the tick sequence
-- [ ] Add micro-interaction: phase number counter animates (flip/slide) on phase change
-- [ ] Phase 2: Add "Expand All / Collapse All" toggle for code sections
-- [ ] Phase 3: Add pulsing dot on sparkline during active tick playback
+- [x] Add micro-interaction: phase number counter animates (flip/slide) on phase change
+- [x] Phase 2: Add "Expand All / Collapse All" toggle for code sections
+- [ ] Add scroll progress percentage in footer (how far through current phase)
+- [ ] Phase 2: Add Cmd+F style search/filter for .onto code lines
+- [ ] Add subtle phase transition sound cue (web audio API, optional)
+- [x] Phase 3: Add pulsing dot on sparkline during active tick playback
 
 ## Completed
 - [x] Add subtle text reveal animation on phase headings — word-by-word blur+slide reveal on all 4 phase titles
@@ -72,6 +75,13 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [x] Button press ripple effect on CTA buttons (RippleButton component with CSS animation)
 
 ## Iteration History
+
+### Iteration 13 — 2026-02-24T10:06+01:00
+- Phase 3 sparkline pulsing dot: animated pulsing circle on active tick marker (green for tick1, red for tick2) during playback
+- Phase counter animation: AnimatedPhaseNumber component with slide-up/fade transition on phase change in header tabs
+- Phase 2 Expand All / Collapse All: toggle buttons appear after compilation completes, collapse/expand all code sections
+- Added 3 new backlog items (phase transition sound cue, scroll progress indicator, code search)
+- Build: ✓ (58.8kB page JS) | Deploy: pending
 
 ### Iteration 12 — 2026-02-24T09:51+01:00
 - Text reveal animation: word-by-word blur+slide-up reveal on all 4 phase headings using framer-motion
