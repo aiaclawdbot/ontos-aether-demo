@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Design Tokens ───────────────────────────────────────────────
@@ -247,28 +247,40 @@ const CHAT_MESSAGES = [
 ];
 
 // ─── Phase Component ─────────────────────────────────────────────
+const PHASE_NAMES = ['The Problem', 'The .onto Engine', 'Live Tick', 'Deterministic AI'];
+
 function Header({ phase, setPhase }: { phase: number; setPhase: (p: number) => void }) {
-  const phases = ['The Problem', 'The .onto Engine', 'Live Tick', 'Deterministic AI'];
   return (
-    <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(10,14,23,0.97)', borderBottom: `1px solid ${T.border}`, padding: '10px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 24, height: 24, borderRadius: 5, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, color: '#fff' }}>O</div>
-        <span style={{ fontWeight: 700, fontSize: 15, color: T.text }}>Ontos</span>
-        <span style={{ ...mono, fontSize: 11, color: T.textTer }}>Compiled Reasoning Engine</span>
+    <div style={{ position: 'sticky', top: 0, zIndex: 50 }}>
+      {/* Progress bar */}
+      <div style={{ height: 3, background: T.border }}>
+        <motion.div
+          style={{ height: '100%', background: `linear-gradient(90deg, ${T.accent}, ${T.aether})`, borderRadius: '0 2px 2px 0' }}
+          animate={{ width: `${((phase + 1) / PHASE_NAMES.length) * 100}%` }}
+          transition={{ duration: 0.4, ease: 'easeInOut' }}
+        />
       </div>
-      <div style={{ display: 'flex', gap: 2 }}>
-        {phases.map((p, i) => (
-          <button key={i} onClick={() => setPhase(i)} style={{
-            padding: '6px 14px', borderRadius: 4, border: 'none', cursor: 'pointer', ...mono, fontSize: 11,
-            background: phase === i ? T.accent : 'transparent',
-            color: phase === i ? '#fff' : phase > i ? T.green : T.textTer,
-          }}>
-            {i + 1}. {p}
-          </button>
-        ))}
-      </div>
-      <div style={{ ...mono, fontSize: 11, color: T.aether, border: `1px solid ${T.aether}40`, borderRadius: 4, padding: '5px 12px' }}>
-        AETHER / SENTIMENTRADER
+      <div style={{ background: 'rgba(10,14,23,0.97)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${T.border}`, padding: '10px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 24, height: 24, borderRadius: 5, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, color: '#fff' }}>O</div>
+          <span style={{ fontWeight: 700, fontSize: 15, color: T.text }}>Ontos</span>
+          <span style={{ ...mono, fontSize: 11, color: T.textTer }}>Compiled Reasoning Engine</span>
+        </div>
+        <div style={{ display: 'flex', gap: 2 }}>
+          {PHASE_NAMES.map((p, i) => (
+            <button key={i} onClick={() => setPhase(i)} style={{
+              padding: '6px 14px', borderRadius: 4, border: 'none', cursor: 'pointer', ...mono, fontSize: 11,
+              background: phase === i ? T.accent : 'transparent',
+              color: phase === i ? '#fff' : phase > i ? T.green : T.textTer,
+              transition: 'all 0.2s ease',
+            }}>
+              {i + 1}. {p}
+            </button>
+          ))}
+        </div>
+        <div style={{ ...mono, fontSize: 11, color: T.aether, border: `1px solid ${T.aether}40`, borderRadius: 4, padding: '5px 12px' }}>
+          AETHER / SENTIMENTRADER
+        </div>
       </div>
     </div>
   );
@@ -543,6 +555,14 @@ function Phase3() {
                   {line.text || '\u00A0'}
                 </div>
               ))}
+              {/* Blinking cursor */}
+              {(phase === 'tick1' || phase === 'tick2') && (
+                <motion.span
+                  animate={{ opacity: [1, 0] }}
+                  transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
+                  style={{ ...mono, fontSize: 12, color: T.green }}
+                >▋</motion.span>
+              )}
               {phase === 'between' && (
                 <div style={{ textAlign: 'center', marginTop: 24 }}>
                   <div style={{ ...mono, fontSize: 12, color: T.textSec, marginBottom: 12 }}>
@@ -750,21 +770,81 @@ function Phase4() {
   );
 }
 
+// ─── Footer ──────────────────────────────────────────────────────
+function Footer({ phase, setPhase }: { phase: number; setPhase: (p: number) => void }) {
+  return (
+    <div style={{ borderTop: `1px solid ${T.border}`, padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 48 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 20, height: 20, borderRadius: 4, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 10, color: '#fff' }}>O</div>
+        <span style={{ ...mono, fontSize: 11, color: T.textTer }}>Built with .onto — Compiled Reasoning Engine</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        {phase > 0 && (
+          <button onClick={() => setPhase(0)} style={{ ...mono, fontSize: 11, color: T.textTer, background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 4, padding: '5px 12px', cursor: 'pointer' }}>
+            ↺ Restart Demo
+          </button>
+        )}
+        {phase < PHASE_NAMES.length - 1 && (
+          <button onClick={() => setPhase(phase + 1)} style={{ ...mono, fontSize: 11, color: '#fff', background: T.accent, border: 'none', borderRadius: 4, padding: '5px 12px', cursor: 'pointer' }}>
+            Next: {PHASE_NAMES[phase + 1]} →
+          </button>
+        )}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ ...mono, fontSize: 10, color: T.textTer }}>← → to navigate</span>
+        {/* Phase dots */}
+        <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
+          {PHASE_NAMES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setPhase(i)}
+              style={{
+                width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer', padding: 0,
+                background: phase === i ? T.accent : phase > i ? T.green : T.textTer,
+                transition: 'all 0.2s ease',
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main ────────────────────────────────────────────────────────
-const PHASES = [Phase1, Phase2, Phase3, Phase4];
+const PHASES_COMPONENTS = [Phase1, Phase2, Phase3, Phase4];
 
 export default function Page() {
   const [phase, setPhase] = useState(0);
-  const PhaseComponent = PHASES[phase];
+  const PhaseComponent = PHASES_COMPONENTS[phase];
+
+  // Keyboard navigation
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      setPhase(p => Math.min(p + 1, PHASE_NAMES.length - 1));
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      setPhase(p => Math.max(p - 1, 0));
+    } else if (e.key >= '1' && e.key <= '4') {
+      setPhase(parseInt(e.key) - 1);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   return (
     <div style={{ background: T.bg, minHeight: '100vh', color: T.text, fontFamily: "'Inter', sans-serif" }}>
       <Header phase={phase} setPhase={setPhase} />
       <AnimatePresence mode="wait">
-        <motion.div key={phase} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+        <motion.div key={phase} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.3, ease: 'easeOut' }}>
           <PhaseComponent />
         </motion.div>
       </AnimatePresence>
+      <Footer phase={phase} setPhase={setPhase} />
     </div>
   );
 }
