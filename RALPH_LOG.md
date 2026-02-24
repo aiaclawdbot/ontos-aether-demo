@@ -10,15 +10,19 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 
 ## Backlog
 - [ ] Phase 3: Add sound effects toggle (optional terminal typing sounds)
-- [ ] Performance — lazy load phases, reduce bundle size (currently 56kB page JS)
+- [ ] Performance — lazy load phases, reduce bundle size (currently 57kB page JS)
 - [ ] Mobile: Bottom sheet navigation drawer instead of compressed header tabs
 - [ ] Phase 2: Add a minimap/scrollbar indicator for the code editor
-- [ ] Phase 4: Add a third follow-up question with portfolio-level recommendation
-- [ ] Add subtle gradient border animation on the main CTA button in Phase 4
-- [ ] Phase 3: Add a mini risk gauge (speedometer-style) that fills during tick playback
-- [ ] Add a "Share Demo" button (copy link to clipboard)
+- [ ] Add favicon with Ontos "O" branding (currently default Next.js)
+- [ ] Phase 1: Add animated "How it works" flowchart below the comparison grid
+- [ ] Phase 4: Typing speed slider to control agent response speed
+- [ ] Add subtle page-enter animation on first load (hero text fade-in stagger)
 
 ## Completed
+- [x] Add a "Share Demo" button (copy link to clipboard) — header share button with clipboard feedback
+- [x] Phase 3: Add a mini risk gauge (speedometer-style) that fills during tick playback — 3 SVG gauges (confidence, correlation, risk level) animate during tick2
+- [x] Add subtle gradient border animation on the main CTA button in Phase 4 — rotating gradient border (accent→aether→cyan)
+- [x] Phase 4: Add a third follow-up question with portfolio-level recommendation — counterfactual analysis showing -9.7% vs +3.2% alpha swing
 - [x] Add subtle hover effects on stat cards (scale + glow) — StatCard component with motion scale/boxShadow
 - [x] Add a "Book a Demo" floating CTA that appears after Phase 2 — FloatingCTA fixed bottom-right
 - [x] Phase 1: Add animated connection lines between the 3 stat counters — gradient lines animate in
@@ -58,6 +62,14 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [x] Subtle grid background animation with radial glow (non-distracting, adds depth)
 
 ## Iteration History
+
+### Iteration 9 — 2026-02-24T09:03+01:00
+- Share Demo button: header "🔗 Share" copies URL to clipboard with ✓ feedback
+- Phase 3 risk gauge: 3 SVG speedometer-style gauges (Confidence, Correlation, Risk Level) animate during tick2 playback and lock at final values
+- Phase 4 gradient CTA: animated gradient border (accent→aether→cyan rotating) on the main "See your indicators compiled" button
+- Phase 4 third follow-up: "What if we ignored this signal?" → counterfactual analysis with portfolio drawdown vs hedged outcome (12.9% alpha swing)
+- Added 4 new backlog items (favicon, flowchart, typing speed slider, page-enter animation)
+- Build: ✓ (57.1kB page JS) | Deploy: ✓ (Vercel prod)
 
 ### Iteration 8 — 2026-02-24T08:48+01:00
 - StatCard component: hover scale (1.05x) + colored glow shadow on all stat cards (Phase 2 compile stats, Phase 3 result stats)
