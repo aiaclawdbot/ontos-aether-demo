@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  icons: {
+    icon: '/icon.svg',
+  },
   title: "Ontos × SentimenTrader — Compiled Reasoning for 3,100 Indicators",
   description: "See how Ontos' compiled ontology engine detects cross-asset regime shifts across SentimenTrader's 3,100 indicators — in 0.42ms. Interactive demo.",
   openGraph: {

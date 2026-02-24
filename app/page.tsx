@@ -641,7 +641,8 @@ function Phase2() {
           </span>
         </div>
 
-        <div ref={codeRef} style={{ maxHeight: 580, overflowY: 'auto', padding: '12px 0' }}>
+        <div style={{ display: 'flex' }}>
+        <div ref={codeRef} style={{ maxHeight: 580, overflowY: 'auto', padding: '12px 0', flex: 1 }}>
           {codeLines.slice(0, linesVisible).map((line, i) => {
             if (isLineHidden(i)) return null;
             const section = getSectionAtLine(i);
@@ -660,6 +661,23 @@ function Phase2() {
               </div>
             );
           })}
+        </div>
+        {/* Minimap */}
+        {!isMobile && (
+          <div style={{ width: 48, background: T.elevated, borderLeft: `1px solid ${T.border}`, padding: '4px 2px', overflowY: 'hidden', maxHeight: 580, position: 'relative' }}>
+            {codeLines.slice(0, linesVisible).map((line, i) => {
+              if (isLineHidden(i)) return null;
+              const trimmed = line.trim();
+              const indent = line.length - line.trimStart().length;
+              const barColor = trimmed.startsWith('//') ? T.textTer : trimmed.startsWith('@') ? T.accent : /^\s*(rule|class|relationship)\s/.test(line) ? T.aether : /^\s*(match|where|then)\s/.test(line) ? T.cyan : `${T.textSec}40`;
+              return (
+                <div key={i} style={{ height: 2, marginBottom: 1, marginLeft: Math.min(indent, 8), width: Math.min(Math.max(trimmed.length * 0.6, 4), 40), background: barColor, borderRadius: 1, opacity: 0.7 }} />
+              );
+            })}
+            {/* Viewport indicator */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: `${Math.min((580 / (codeLines.length * 20)) * 100, 100)}%`, background: `${T.accent}10`, border: `1px solid ${T.accent}20`, borderRadius: 2, pointerEvents: 'none' }} />
+          </div>
+        )}
         </div>
       </div>
 
@@ -960,6 +978,7 @@ function Phase4() {
   const [chatStep, setChatStep] = useState(0);
   const [typing, setTyping] = useState(false);
   const [typingText, setTypingText] = useState('');
+  const [typingSpeed, setTypingSpeed] = useState(1); // 0.5x to 3x
   const chatRef = useRef<HTMLDivElement>(null);
 
   const typeMessage = (msgIndex: number, nextStep: number) => {
@@ -970,7 +989,8 @@ function Phase4() {
     const typeNext = () => {
       if (i >= fullText.length) { setTyping(false); setChatStep(nextStep); return; }
       const char = fullText[i];
-      const delay = char === '\n' ? 40 + Math.random() * 80 : char === ' ' ? 10 + Math.random() * 20 : char === '*' ? 5 : 8 + Math.random() * 18;
+      const baseDelay = char === '\n' ? 40 + Math.random() * 80 : char === ' ' ? 10 + Math.random() * 20 : char === '*' ? 5 : 8 + Math.random() * 18;
+      const delay = baseDelay / typingSpeed;
       i++;
       setTypingText(fullText.slice(0, i));
       setTimeout(typeNext, delay);
@@ -1024,7 +1044,15 @@ function Phase4() {
         <div style={{ background: T.surface, border: `1px solid ${T.accent}30`, borderRadius: 8, overflow: 'hidden' }}>
           <div style={{ padding: '10px 16px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ ...mono, fontSize: 11, color: T.accent }}>ONTOS AGENT</div>
-            <div style={{ ...mono, fontSize: 10, color: T.textTer }}>Powered by compiled .onto graph</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ ...mono, fontSize: 9, color: T.textTer }}>Speed</span>
+              <input type="range" min={0.5} max={3} step={0.25} value={typingSpeed}
+                onChange={(e) => setTypingSpeed(parseFloat(e.target.value))}
+                style={{ width: 60, accentColor: T.accent, height: 3, cursor: 'pointer' }}
+                aria-label="Typing speed"
+              />
+              <span style={{ ...mono, fontSize: 9, color: T.accent, minWidth: 24 }}>{typingSpeed}×</span>
+            </div>
           </div>
           <div ref={chatRef} style={{ padding: 16, minHeight: 320, maxHeight: 400, overflowY: 'auto' }}>
             {chatStep === 0 && (
@@ -1257,7 +1285,11 @@ export default function Page() {
   if (!loaded) return <LoadingSkeleton />;
 
   return (
-    <div style={{ background: T.bg, minHeight: '100vh', color: T.text, fontFamily: "'Inter', sans-serif", position: 'relative' }}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6, ease: 'easeOut' }}
+      style={{ background: T.bg, minHeight: '100vh', color: T.text, fontFamily: "'Inter', sans-serif", position: 'relative' }}
       {...swipeHandlers}>
       {/* Skip to content link for accessibility */}
       <a href="#main-content" style={{ position: 'absolute', left: -9999, top: 'auto', width: 1, height: 1, overflow: 'hidden', zIndex: 100 }}
@@ -1269,7 +1301,9 @@ export default function Page() {
       <FloatingParticles />
       <FloatingCTA visible={phase >= 2} />
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <Header phase={phase} setPhase={setPhase} autoAdvance={autoAdvance} setAutoAdvance={setAutoAdvance} />
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+          <Header phase={phase} setPhase={setPhase} autoAdvance={autoAdvance} setAutoAdvance={setAutoAdvance} />
+        </motion.div>
         <main id="main-content" role="main" aria-label={`Phase ${phase + 1}: ${PHASE_NAMES[phase]}`}>
         <AnimatePresence mode="wait">
           <motion.div key={phase} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.3, ease: 'easeOut' }}>
@@ -1279,8 +1313,10 @@ export default function Page() {
           </motion.div>
         </AnimatePresence>
         </main>
-        <Footer phase={phase} setPhase={setPhase} />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.3 }}>
+          <Footer phase={phase} setPhase={setPhase} />
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }
