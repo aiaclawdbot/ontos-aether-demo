@@ -93,6 +93,62 @@ function renderInline(text: string) {
 }
 
 // ─── Copy Button ─────────────────────────────────────────────────
+// ─── Hover Stat Card ─────────────────────────────────────────────
+function StatCard({ value, label, color }: { value: string; label: string; color: string }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <motion.div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      animate={{
+        scale: hovered ? 1.05 : 1,
+        boxShadow: hovered ? `0 0 24px ${color}30` : `0 0 0px ${color}00`,
+      }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      style={{
+        background: T.surface, border: `1px solid ${hovered ? color + '50' : T.border}`,
+        borderRadius: 6, padding: '12px 16px', textAlign: 'center', cursor: 'default',
+        transition: 'border-color 0.2s ease',
+      }}
+    >
+      <div style={{ ...mono, fontSize: 20, fontWeight: 700, color }}>{value}</div>
+      <div style={{ ...mono, fontSize: 10, color: T.textTer, marginTop: 2 }}>{label}</div>
+    </motion.div>
+  );
+}
+
+// ─── Floating Book a Demo CTA ────────────────────────────────────
+function FloatingCTA({ visible }: { visible: boolean }) {
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.a
+          href="https://cal.com/michael-walker-pamuoj/ontos"
+          target="_blank"
+          rel="noopener noreferrer"
+          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.9 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          style={{
+            position: 'fixed', bottom: 24, right: 24, zIndex: 60,
+            padding: '12px 24px', background: T.accent, color: '#fff',
+            textDecoration: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13,
+            fontFamily: "'Inter', sans-serif",
+            boxShadow: `0 4px 24px ${T.accent}40`,
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.97 }}
+        >
+          <span>📅</span> Book a Demo
+        </motion.a>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ─── Copy Button ─────────────────────────────────────────────────
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
@@ -262,15 +318,25 @@ function Phase1() {
         The Mathematical Nightmare
       </h1>
 
-      <div style={{ display: 'flex', gap: isMobile ? 12 : 24, marginBottom: 24, justifyContent: 'center' }}>
+      <div style={{ display: 'flex', gap: isMobile ? 12 : 24, marginBottom: 24, justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
         {[
           { value: indicatorCount.toLocaleString(), label: 'Indicators', color: T.accent },
           { value: relationshipCount.toLocaleString(), label: 'Relationships', color: T.blue },
           { value: ruleCount.toLocaleString(), label: 'Rules', color: T.amber },
-        ].map(s => (
-          <div key={s.label} style={{ textAlign: 'center' }}>
-            <div style={{ ...mono, fontSize: isMobile ? 20 : 28, fontWeight: 700, color: s.color }}>{s.value}</div>
-            <div style={{ ...mono, fontSize: 10, color: T.textTer }}>{s.label}</div>
+        ].map((s, i, arr) => (
+          <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 24 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ ...mono, fontSize: isMobile ? 20 : 28, fontWeight: 700, color: s.color }}>{s.value}</div>
+              <div style={{ ...mono, fontSize: 10, color: T.textTer }}>{s.label}</div>
+            </div>
+            {i < arr.length - 1 && (
+              <motion.div
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                transition={{ delay: 1.5 + i * 0.3, duration: 0.5, ease: 'easeOut' }}
+                style={{ width: isMobile ? 16 : 32, height: 2, background: `linear-gradient(90deg, ${s.color}60, ${arr[i + 1].color}60)`, borderRadius: 1 }}
+              />
+            )}
           </div>
         ))}
       </div>
@@ -549,10 +615,7 @@ function Phase2() {
             { label: 'Rules', value: '847', color: T.amber },
             { label: 'Compile', value: '<1ms', color: T.green },
           ].map(s => (
-            <div key={s.label} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: '12px 16px', textAlign: 'center' }}>
-              <div style={{ ...mono, fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div>
-              <div style={{ ...mono, fontSize: 10, color: T.textTer, marginTop: 2 }}>{s.label}</div>
-            </div>
+            <StatCard key={s.label} value={s.value} label={s.label} color={s.color} />
           ))}
         </motion.div>
       )}
@@ -797,10 +860,7 @@ function Phase3() {
               { value: '12 days', label: 'Before VIX hit 65', color: T.red },
               { value: '4 assets', label: 'Cross-domain detection', color: T.amber },
             ].map(s => (
-              <div key={s.label} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: 16, textAlign: 'center' }}>
-                <div style={{ ...mono, fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
-                <div style={{ ...mono, fontSize: 10, color: T.textTer }}>{s.label}</div>
-              </div>
+              <StatCard key={s.label} value={s.value} label={s.label} color={s.color} />
             ))}
           </div>
           {/* 4-Hop Graph Traversal */}
@@ -1095,6 +1155,7 @@ export default function Page() {
       </a>
       <GridBackground />
       <FloatingParticles />
+      <FloatingCTA visible={phase >= 2} />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <Header phase={phase} setPhase={setPhase} autoAdvance={autoAdvance} setAutoAdvance={setAutoAdvance} />
         <main id="main-content" role="main" aria-label={`Phase ${phase + 1}: ${PHASE_NAMES[phase]}`}>
