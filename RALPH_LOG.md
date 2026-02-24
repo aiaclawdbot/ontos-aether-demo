@@ -12,13 +12,17 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [ ] Phase 3: Add sound effects toggle (optional terminal typing sounds)
 - [ ] Performance — lazy load phases, reduce bundle size (currently 57kB page JS)
 - [ ] Mobile: Bottom sheet navigation drawer instead of compressed header tabs
-- [ ] Phase 2: Add a minimap/scrollbar indicator for the code editor
-- [ ] Add favicon with Ontos "O" branding (currently default Next.js)
 - [ ] Phase 1: Add animated "How it works" flowchart below the comparison grid
-- [ ] Phase 4: Typing speed slider to control agent response speed
-- [ ] Add subtle page-enter animation on first load (hero text fade-in stagger)
+- [ ] Add prefers-reduced-motion support (disable animations for accessibility)
+- [ ] Phase 3: Add a "timeline scrubber" to jump to any point in the tick sequence
+- [ ] Phase 2: Add line highlight on hover in code editor
+- [ ] Add micro-interaction: button press ripple effect on all CTA buttons
 
 ## Completed
+- [x] Add favicon with Ontos "O" branding — SVG favicon with purple rounded rect + white "O"
+- [x] Add subtle page-enter animation on first load — wrapper fade-in, header slide-down, footer delayed fade
+- [x] Phase 4: Typing speed slider to control agent response speed — 0.5×–3× range slider in agent panel header
+- [x] Phase 2: Add a minimap/scrollbar indicator for the code editor — syntax-colored mini bars with viewport overlay (desktop only)
 - [x] Add a "Share Demo" button (copy link to clipboard) — header share button with clipboard feedback
 - [x] Phase 3: Add a mini risk gauge (speedometer-style) that fills during tick playback — 3 SVG gauges (confidence, correlation, risk level) animate during tick2
 - [x] Add subtle gradient border animation on the main CTA button in Phase 4 — rotating gradient border (accent→aether→cyan)
@@ -62,6 +66,14 @@ Live URL: Deployed on Vercel (ontos-aether-demo project).
 - [x] Subtle grid background animation with radial glow (non-distracting, adds depth)
 
 ## Iteration History
+
+### Iteration 10 — 2026-02-24T09:18+01:00
+- Favicon: SVG icon with Ontos purple "O" branding, replaces default Next.js favicon
+- Page-enter animation: smooth fade-in on page load with header slide-down and staggered footer reveal
+- Phase 4 typing speed slider: 0.5×–3× speed control in the Ontos Agent panel header, adjusts character typing delay
+- Phase 2 code minimap: syntax-colored miniature bar representation alongside code editor (desktop), with viewport indicator overlay
+- Added 4 new backlog items (reduced-motion, timeline scrubber, line highlight, button ripple)
+- Build: ✓ (57.4kB page JS) | Deploy: ✓ (Vercel prod)
 
 ### Iteration 9 — 2026-02-24T09:03+01:00
 - Share Demo button: header "🔗 Share" copies URL to clipboard with ✓ feedback
